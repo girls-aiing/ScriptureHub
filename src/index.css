@@ -1,0 +1,849 @@
+/* ═══════════════════════════════════════════════════════════════
+   ScriptureHub — Global Stylesheet
+   "Digital Sanctuary" Design System
+   Fonts: Playfair Display (headings) + Montserrat (body)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Google Fonts ── */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Montserrat:wght@300;400;500;600&display=swap');
+
+/* ── CSS Custom Properties (Design Tokens) ── */
+:root {
+  /* Colours */
+  --midnight-navy:  #0d1b2a;
+  --deep-charcoal:  #1a1a2e;
+  --royal-gold:     #c9a84c;
+  --soft-gold:      #e8c97e;
+  --parchment:      #f5f0e8;
+  --pure-white:     #ffffff;
+  --muted-grey:     #8a8fa8;
+  --accent-blue:    #4a90d9;
+
+  /* Typography */
+  --font-heading: 'Playfair Display', Georgia, serif;
+  --font-body:    'Montserrat', Arial, sans-serif;
+
+  /* Spacing */
+  --space-xs:  0.25rem;
+  --space-sm:  0.5rem;
+  --space-md:  1rem;
+  --space-lg:  2rem;
+  --space-xl:  4rem;
+
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+
+  /* Transitions */
+  --transition-fast: 0.2s ease;
+  --transition-med:  0.4s ease;
+}
+
+/* ── CSS Reset & Base ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--midnight-navy);
+  color: var(--parchment);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+  /* Prevent layout shift — every image reserves space before it loads */
+  height: auto;
+}
+
+a {
+  color: var(--royal-gold);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--soft-gold);
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+  line-height: 1.3;
+}
+
+/* ── Utility Classes ── */
+.container {
+  width: 90%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+}
+
+.section {
+  padding: var(--space-xl) 0;
+}
+
+.text-gold   { color: var(--royal-gold); }
+.text-muted  { color: var(--muted-grey); }
+.text-center { text-align: center; }
+
+.btn {
+  display: inline-block;
+  padding: 0.75rem 1.75rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  border: none;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  /* Minimum touch target — 44px tall keeps fingers happy on mobile */
+  min-height: 44px;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(201, 168, 76, 0.3);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--royal-gold), var(--soft-gold));
+  color: var(--midnight-navy);
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 2px solid var(--royal-gold);
+  color: var(--royal-gold);
+}
+
+/* ── Navbar ── */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: rgba(13, 27, 42, 0.97);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(201, 168, 76, 0.2);
+  padding: var(--space-md) 0;
+}
+
+.navbar__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.navbar__logo {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  color: var(--royal-gold);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.navbar__links {
+  display: flex;
+  gap: var(--space-lg);
+  list-style: none;
+  align-items: center;
+}
+
+.navbar__links a {
+  color: var(--parchment);
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: color var(--transition-fast);
+}
+
+.navbar__links a:hover,
+.navbar__links a.active {
+  color: var(--royal-gold);
+}
+
+/* Hamburger button — hidden on desktop, shown on mobile */
+.navbar__hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 28px;
+  height: 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  /* Ensure 44px touch target */
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+}
+
+.navbar__hamburger span {
+  display: block;
+  width: 28px;
+  height: 2px;
+  background-color: var(--royal-gold);
+  border-radius: 2px;
+  transition: transform var(--transition-fast), opacity var(--transition-fast);
+}
+
+/* ── Hero Section ── */
+.hero {
+  /* Desktop: rich gradient that evokes a candlelit sanctuary */
+  background: linear-gradient(
+    135deg,
+    var(--midnight-navy) 0%,
+    #162032 40%,
+    #1e1e3a 100%
+  );
+  padding: var(--space-xl) 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  /* Subtle gold radial glow behind the headline — pure CSS, zero KB */
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 400px;
+  background: radial-gradient(ellipse, rgba(201, 168, 76, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero__title {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  color: var(--pure-white);
+  margin-bottom: var(--space-md);
+}
+
+.hero__subtitle {
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  color: var(--muted-grey);
+  max-width: 640px;
+  margin: 0 auto var(--space-lg);
+}
+
+.hero__cta-group {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ── Feature Cards Grid ── */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-lg);
+}
+
+.feature-card {
+  background: var(--deep-charcoal);
+  border: 1px solid rgba(201, 168, 76, 0.15);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  transition: transform var(--transition-med), border-color var(--transition-med);
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--royal-gold);
+}
+
+.feature-card__icon {
+  font-size: 2.5rem;
+  margin-bottom: var(--space-md);
+}
+
+.feature-card__title {
+  font-size: 1.2rem;
+  color: var(--royal-gold);
+  margin-bottom: var(--space-sm);
+}
+
+.feature-card__body {
+  font-size: 0.9rem;
+  color: var(--muted-grey);
+}
+
+/* ── Quiz Cards ── */
+.quiz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-md);
+}
+
+.quiz-card {
+  background: var(--deep-charcoal);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  border: 1px solid rgba(201, 168, 76, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  transition: border-color var(--transition-fast);
+}
+
+.quiz-card:hover {
+  border-color: var(--royal-gold);
+}
+
+/* SVG icon container inside quiz cards */
+.quiz-card__svg-wrap {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(201, 168, 76, 0.1);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.quiz-card__svg-wrap svg {
+  width: 28px;
+  height: 28px;
+  fill: var(--royal-gold);
+}
+
+/* ── Did You Know Cards ── */
+.did-you-know-card {
+  background: var(--deep-charcoal);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid rgba(201, 168, 76, 0.1);
+}
+
+/* Blur-up technique: image placeholder blurs in, real image fades over */
+.did-you-know-card__img-wrap {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  background-color: var(--midnight-navy); /* fallback colour while loading */
+  overflow: hidden;
+}
+
+.did-you-know-card__img-placeholder {
+  /* Tiny blurred placeholder — provides colour hint when offline */
+  position: absolute;
+  inset: 0;
+  filter: blur(12px);
+  transform: scale(1.05); /* hides blur edges */
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  transition: opacity var(--transition-med);
+}
+
+.did-you-know-card__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* object-fit: cover keeps the image contained — no layout shifts */
+  object-fit: cover;
+  object-position: center;
+  opacity: 0;
+  transition: opacity var(--transition-med);
+}
+
+/* JS adds .loaded class once the image fires its onLoad event */
+.did-you-know-card__img.loaded {
+  opacity: 1;
+}
+
+.did-you-know-card__img.loaded + .did-you-know-card__img-placeholder {
+  opacity: 0;
+}
+
+.did-you-know-card__body {
+  padding: var(--space-md);
+}
+
+/* ── Stat Cards ── */
+.stat-card {
+  background: var(--deep-charcoal);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  text-align: center;
+  border: 1px solid rgba(201, 168, 76, 0.1);
+}
+
+.stat-card__value {
+  font-family: var(--font-heading);
+  font-size: 2.5rem;
+  color: var(--royal-gold);
+}
+
+.stat-card__label {
+  font-size: 0.85rem;
+  color: var(--muted-grey);
+  margin-top: var(--space-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── Chat Bubble ── */
+.chat-bubble {
+  max-width: 680px;
+  margin: var(--space-md) auto;
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-lg);
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.chat-bubble--user {
+  background: rgba(74, 144, 217, 0.15);
+  border: 1px solid rgba(74, 144, 217, 0.3);
+  margin-left: auto;
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+.chat-bubble--ai {
+  background: rgba(201, 168, 76, 0.08);
+  border: 1px solid rgba(201, 168, 76, 0.2);
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+/* ── Difficulty Badge ── */
+.difficulty-badge {
+  display: inline-block;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.difficulty-badge--beginner  { background: rgba(80, 200, 120, 0.15); color: #50c878; }
+.difficulty-badge--scholar   { background: rgba(201, 168, 76, 0.15); color: var(--royal-gold); }
+.difficulty-badge--seminary  { background: rgba(200, 80, 80, 0.15);  color: #e05a5a; }
+
+/* ── Footer ── */
+.footer {
+  background-color: var(--deep-charcoal);
+  border-top: 1px solid rgba(201, 168, 76, 0.15);
+  padding: var(--space-lg) 0;
+  text-align: center;
+  color: var(--muted-grey);
+  font-size: 0.85rem;
+}
+
+.footer a {
+  color: var(--muted-grey);
+}
+
+.footer a:hover {
+  color: var(--royal-gold);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE STYLES — Mobile-First Media Queries
+   Strategy: Performance & Accessibility first.
+   Breakpoints: 480px | 768px | 1024px
+
+   Key rules:
+   • Hero uses CSS gradient on mobile — 0ms load time, no images.
+   • Quiz icons are SVGs — infinitely sharp, under 2 KB each.
+   • Did-You-Know images use object-fit:cover + blur-up placeholder.
+   • All images carry loading="lazy" (applied in JSX components).
+   • Touch targets are minimum 44×44px on all interactive elements.
+   ═══════════════════════════════════════════════════════════════ */
+
+
+/* ─────────────────────────────────────────────
+   BASE MOBILE STYLES  (applies to all screens,
+   then we progressively enhance upward)
+   ───────────────────────────────────────────── */
+
+/* Make sure every image is lazy by default via CSS hint
+   (the loading="lazy" attribute in JSX does the real work) */
+img {
+  content-visibility: auto; /* browser skips rendering off-screen images */
+}
+
+/* Smooth image reveal — works with the .loaded JS class */
+.did-you-know-card__img {
+  will-change: opacity; /* tells the GPU to prepare the fade transition */
+}
+
+
+/* ─────────────────────────────────────────────
+   480px — Small phones
+   ───────────────────────────────────────────── */
+@media (max-width: 480px) {
+
+  /* ── Hero: remove any background image, use pure CSS gradient ──
+     This is the performance core — zero bytes fetched for the hero. */
+  .hero {
+    background: linear-gradient(
+      160deg,
+      var(--midnight-navy) 0%,
+      var(--deep-charcoal) 100%
+    ) !important; /* override any inline background-image set in JSX */
+    background-image: none !important;
+    padding: 3rem var(--space-md);
+  }
+
+  .hero::before {
+    /* Scale down the gold glow so it fits a small screen */
+    width: 300px;
+    height: 200px;
+  }
+
+  .hero__title {
+    font-size: 1.75rem;
+  }
+
+  .hero__subtitle {
+    font-size: 0.95rem;
+  }
+
+  .hero__cta-group {
+    flex-direction: column;
+    align-items: stretch; /* full-width buttons on small phones */
+  }
+
+  /* Full-width buttons are easier to tap */
+  .hero__cta-group .btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  /* ── Navigation: stack logo and links vertically ── */
+  .navbar__links {
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding: var(--space-md) 0;
+  }
+
+  /* ── Cards: single column, full width ── */
+  .feature-grid,
+  .quiz-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .feature-card,
+  .quiz-card,
+  .stat-card {
+    padding: var(--space-md);
+  }
+
+  /* ── Did You Know image: shorter on tiny screens ── */
+  .did-you-know-card__img-wrap {
+    height: 140px;
+  }
+
+  /* ── Chat bubbles: full width on phones ── */
+  .chat-bubble {
+    max-width: 100%;
+    padding: var(--space-md);
+    margin: var(--space-sm) 0;
+    font-size: 0.9rem;
+  }
+
+  /* ── Stat card value: slightly smaller ── */
+  .stat-card__value {
+    font-size: 2rem;
+  }
+
+  /* ── Section padding: tighter on small screens ── */
+  .section {
+    padding: 2.5rem 0;
+  }
+
+  /* ── Container: full-bleed with comfortable gutters ── */
+  .container {
+    width: 100%;
+    padding: 0 1rem;
+  }
+
+  /* ── All buttons: enforce 44px touch target ── */
+  .btn {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.9rem;
+  }
+
+  /* ── Footer: extra breathing room on mobile ── */
+  .footer {
+    padding: var(--space-lg) var(--space-md);
+    font-size: 0.8rem;
+  }
+}
+
+
+/* ─────────────────────────────────────────────
+   768px — Tablets & large phones (landscape)
+   ───────────────────────────────────────────── */
+@media (min-width: 481px) and (max-width: 768px) {
+
+  /* ── Hero: still CSS-only gradient, slightly more padding ── */
+  .hero {
+    background: linear-gradient(
+      150deg,
+      var(--midnight-navy) 0%,
+      #162032 50%,
+      var(--deep-charcoal) 100%
+    ) !important;
+    background-image: none !important;
+    padding: 4rem var(--space-md);
+  }
+
+  .hero__title {
+    font-size: 2.25rem;
+  }
+
+  .hero__subtitle {
+    font-size: 1rem;
+  }
+
+  /* CTA buttons side-by-side but not full-width */
+  .hero__cta-group {
+    flex-direction: row;
+    justify-content: center;
+  }
+
+  /* ── Two-column grids on tablet ── */
+  .feature-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .quiz-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* ── Did You Know image: medium height ── */
+  .did-you-know-card__img-wrap {
+    height: 160px;
+  }
+
+  /* ── Chat bubbles: comfortable reading width ── */
+  .chat-bubble {
+    max-width: 90%;
+  }
+
+  /* ── Container: slightly wider gutters ── */
+  .container {
+    width: 92%;
+    padding: 0 1.25rem;
+  }
+
+  /* ── Hamburger visible on tablets too ── */
+  .navbar__hamburger {
+    display: flex;
+  }
+
+  /* Nav links hidden by default — shown when menu is open */
+  .navbar__links {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    background-color: rgba(13, 27, 42, 0.98);
+    padding: var(--space-md);
+    gap: var(--space-md);
+    border-top: 1px solid rgba(201, 168, 76, 0.15);
+  }
+
+  /* JS toggles this class on the <ul> to show/hide the menu */
+  .navbar__links--open {
+    display: flex;
+  }
+
+  /* Nav links larger touch targets on tablet */
+  .navbar__links a {
+    display: block;
+    padding: 0.6rem 0;
+    font-size: 1rem;
+    min-height: 44px;
+    line-height: 44px;
+  }
+
+  /* Stack navbar inner so hamburger sits on the right */
+  .navbar__inner {
+    flex-wrap: wrap;
+  }
+}
+
+
+/* ─────────────────────────────────────────────
+   max-width: 768px — shared rules for BOTH
+   phone sizes above (avoids repetition)
+   ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+
+  /* Show hamburger on ALL sub-768px screens */
+  .navbar__hamburger {
+    display: flex;
+  }
+
+  /* Hide the link list until toggled open */
+  .navbar__links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    background-color: rgba(13, 27, 42, 0.99);
+    padding: var(--space-md) var(--space-lg);
+    gap: var(--space-md);
+    border-top: 1px solid rgba(201, 168, 76, 0.2);
+    z-index: 200;
+  }
+
+  /* .navbar__links--open is toggled by React useState in Navbar.jsx */
+  .navbar__links--open {
+    display: flex;
+  }
+
+  /* Make the navbar container relative so the dropdown anchors to it */
+  .navbar {
+    position: sticky;
+    top: 0;
+  }
+
+  .navbar__inner {
+    position: relative; /* anchor for the absolute dropdown */
+    flex-wrap: nowrap; /* logo and burger stay on one line */
+  }
+
+  /* Larger tappable nav links */
+  .navbar__links a {
+    display: block;
+    padding: 0.75rem 0;
+    font-size: 1rem;
+    min-height: 44px;
+    line-height: 44px;
+  }
+}
+
+
+/* ─────────────────────────────────────────────
+   1024px — Desktop & wide tablets
+   ───────────────────────────────────────────── */
+@media (min-width: 1024px) {
+
+  /* ── Hero: restore the rich layered gradient + subtle texture ── */
+  .hero {
+    background: linear-gradient(
+      135deg,
+      var(--midnight-navy) 0%,
+      #162032 40%,
+      #1e1e3a 100%
+    );
+    padding: var(--space-xl) 0;
+  }
+
+  .hero__title {
+    font-size: 3.5rem;
+  }
+
+  .hero__subtitle {
+    font-size: 1.25rem;
+  }
+
+  /* ── Hamburger hidden on desktop — full nav visible ── */
+  .navbar__hamburger {
+    display: none;
+  }
+
+  /* Nav links always visible, horizontal row on desktop */
+  .navbar__links {
+    display: flex !important;  /* override any mobile open/close state */
+    flex-direction: row;
+    position: static;
+    background: transparent;
+    padding: 0;
+    border: none;
+    gap: var(--space-lg);
+    width: auto;
+  }
+
+  /* ── Feature grid: up to 4 columns on wide screens ── */
+  .feature-grid {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+
+  /* ── Quiz grid: 3–4 columns ── */
+  .quiz-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+
+  /* ── Did You Know image: full height ── */
+  .did-you-know-card__img-wrap {
+    height: 180px;
+  }
+
+  /* ── Chat bubbles: comfortable reading width ── */
+  .chat-bubble {
+    max-width: 680px;
+  }
+
+  /* ── Container: standard max-width ── */
+  .container {
+    width: 90%;
+    max-width: 1200px;
+  }
+}
+
+
+/* ─────────────────────────────────────────────
+   PERFORMANCE HELPERS — apply at all sizes
+   These are the "Lazy & Light" engine rules.
+   ───────────────────────────────────────────── */
+
+/* Prevent layout shift on any image that has a known aspect ratio */
+.img-ratio-16-9 {
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  object-fit: cover;
+}
+
+.img-ratio-4-3 {
+  aspect-ratio: 4 / 3;
+  width: 100%;
+  object-fit: cover;
+}
+
+/* Blur-up fade-in: the tiny placeholder blurs while the real image loads */
+.blur-up {
+  filter: blur(10px);
+  transition: filter 0.4s ease;
+}
+
+.blur-up.loaded {
+  filter: blur(0);
+}
+
+/* SVG icon sizing helper — keeps quiz icons crisp at any pixel density */
+.svg-icon {
+  width: 1.5em;
+  height: 1.5em;
+  fill: currentColor;
+  flex-shrink: 0;
+  /* SVGs are code — they render perfectly on Retina without extra files */
+}

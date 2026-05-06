@@ -1,0 +1,23 @@
+# ── ScriptureHub — Netlify Configuration ───────────────────────────────────
+# This file tells Netlify how to build and serve your site.
+#
+# The [[redirects]] rule is VERY important for React Router:
+# Without it, if a user visits /knowledge-hub directly (by typing it
+# in their browser or refreshing the page), Netlify would return a 404
+# because it looks for a real file at that path.
+# This rule says: "For ANY path, serve index.html" — React Router
+# then takes over and shows the correct page.
+# ───────────────────────────────────────────────────────────────────────────
+
+[build]
+  # The command Netlify runs to build your site
+  command = "npm run build"
+
+  # The folder Netlify deploys after building
+  publish = "dist"
+
+# Redirect all routes to index.html so React Router can handle them
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
