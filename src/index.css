@@ -1,46 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════
-   ScriptureHub — Global Stylesheet
-   "Digital Sanctuary" Design System
-   Fonts: Playfair Display (headings) + Montserrat (body)
-   ═══════════════════════════════════════════════════════════════ */
-
-/* ── Google Fonts ── */
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Montserrat:wght@300;400;500;600&display=swap');
-
-/* ── CSS Custom Properties (Design Tokens) ── */
-:root {
-  /* Colours */
-  --midnight-navy:  #0d1b2a;
-  --deep-charcoal:  #1a1a2e;
-  --royal-gold:     #c9a84c;
-  --soft-gold:      #e8c97e;
-  --parchment:      #f5f0e8;
-  --pure-white:     #ffffff;
-  --muted-grey:     #8a8fa8;
-  --accent-blue:    #4a90d9;
-
-  /* Typography */
-  --font-heading: 'Playfair Display', Georgia, serif;
-  --font-body:    'Montserrat', Arial, sans-serif;
-
-  /* Spacing */
-  --space-xs:  0.25rem;
-  --space-sm:  0.5rem;
-  --space-md:  1rem;
-  --space-lg:  2rem;
-  --space-xl:  4rem;
-
-  /* Border radius */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 16px;
-
-  /* Transitions */
-  --transition-fast: 0.2s ease;
-  --transition-med:  0.4s ease;
-}
-
-/* ── CSS Reset & Base ── */
+/* ── Reset & Base ─────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -48,802 +6,1323 @@
 }
 
 html {
-  scroll-behavior: smooth;
   font-size: 16px;
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 body {
-  font-family: var(--font-body);
-  background-color: var(--midnight-navy);
-  color: var(--parchment);
-  line-height: 1.7;
-  -webkit-font-smoothing: antialiased;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #fafaf8;
+  color: #1a1a2e;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
 }
 
 img {
   max-width: 100%;
   display: block;
-  /* Prevent layout shift — every image reserves space before it loads */
-  height: auto;
 }
 
-a {
-  color: var(--royal-gold);
-  text-decoration: none;
-  transition: color var(--transition-fast);
+/* ── Site Layout ──────────────────────────────────────────── */
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
-a:hover {
-  color: var(--soft-gold);
+.site-main {
+  flex: 1;
 }
 
-h1, h2, h3, h4 {
-  font-family: var(--font-heading);
-  line-height: 1.3;
+.app-shell,
+.app-main {
+  overflow-x: hidden;
+  width: 100%;
 }
 
-/* ── Utility Classes ── */
-.container {
-  width: 90%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 var(--space-md);
-}
-
-.section {
-  padding: var(--space-xl) 0;
-}
-
-.text-gold   { color: var(--royal-gold); }
-.text-muted  { color: var(--muted-grey); }
-.text-center { text-align: center; }
-
-.btn {
-  display: inline-block;
-  padding: 0.75rem 1.75rem;
-  border-radius: var(--radius-md);
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 0.95rem;
-  cursor: pointer;
-  border: none;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-  /* Minimum touch target — 44px tall keeps fingers happy on mobile */
-  min-height: 44px;
-}
-
-.btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(201, 168, 76, 0.3);
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, var(--royal-gold), var(--soft-gold));
-  color: var(--midnight-navy);
-}
-
-.btn-secondary {
-  background: transparent;
-  border: 2px solid var(--royal-gold);
-  color: var(--royal-gold);
-}
-
-/* ── Navbar ── */
+/* ── Navbar ───────────────────────────────────────────────── */
 .navbar {
   position: sticky;
   top: 0;
   z-index: 100;
-  background-color: rgba(13, 27, 42, 0.97);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(201, 168, 76, 0.2);
-  padding: var(--space-md) 0;
-}
-
-.navbar__inner {
+  background: #1a1a2e;
+  border-bottom: 3px solid #c9a84c;
+  padding: 0 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  height: 64px;
 }
 
-.navbar__logo {
-  font-family: var(--font-heading);
-  font-size: 1.5rem;
-  color: var(--royal-gold);
-  font-weight: 700;
+.navbar__brand {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #c9a84c;
   letter-spacing: 0.02em;
+  text-decoration: none;
 }
 
 .navbar__links {
   display: flex;
-  gap: var(--space-lg);
-  list-style: none;
   align-items: center;
+  gap: 0.25rem;
+  list-style: none;
 }
 
 .navbar__links a {
-  color: var(--parchment);
+  display: block;
+  padding: 0.45rem 0.9rem;
+  border-radius: 6px;
   font-size: 0.9rem;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  transition: color var(--transition-fast);
+  font-weight: 600;
+  color: #ccc;
+  transition: color 0.2s, background 0.2s;
+  text-decoration: none;
 }
 
 .navbar__links a:hover,
 .navbar__links a.active {
-  color: var(--royal-gold);
+  color: #fff;
+  background: rgba(201, 168, 76, 0.15);
 }
 
-/* Hamburger button — hidden on desktop, shown on mobile */
-.navbar__hamburger {
-  display: none;
-  flex-direction: column;
-  justify-content: space-between;
-  width: 28px;
-  height: 20px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  /* Ensure 44px touch target */
-  min-width: 44px;
-  min-height: 44px;
-  align-items: center;
+.navbar__links a.active {
+  color: #c9a84c;
 }
 
-.navbar__hamburger span {
-  display: block;
-  width: 28px;
-  height: 2px;
-  background-color: var(--royal-gold);
-  border-radius: 2px;
-  transition: transform var(--transition-fast), opacity var(--transition-fast);
-}
-
-/* ── Hero Section ── */
-.hero {
-  /* Desktop: rich gradient that evokes a candlelit sanctuary */
-  background: linear-gradient(
-    135deg,
-    var(--midnight-navy) 0%,
-    #162032 40%,
-    #1e1e3a 100%
-  );
-  padding: var(--space-xl) 0;
+/* ── Footer ───────────────────────────────────────────────── */
+.footer {
+  background: #1a1a2e;
+  color: #888;
   text-align: center;
-  position: relative;
-  overflow: hidden;
-}
-
-.hero::before {
-  /* Subtle gold radial glow behind the headline — pure CSS, zero KB */
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 600px;
-  height: 400px;
-  background: radial-gradient(ellipse, rgba(201, 168, 76, 0.08) 0%, transparent 70%);
-  pointer-events: none;
-}
-
-.hero__title {
-  font-size: clamp(2rem, 5vw, 3.5rem);
-  color: var(--pure-white);
-  margin-bottom: var(--space-md);
-}
-
-.hero__subtitle {
-  font-size: clamp(1rem, 2vw, 1.25rem);
-  color: var(--muted-grey);
-  max-width: 640px;
-  margin: 0 auto var(--space-lg);
-}
-
-.hero__cta-group {
-  display: flex;
-  gap: var(--space-md);
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-/* ── Feature Cards Grid ── */
-.feature-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: var(--space-lg);
-}
-
-.feature-card {
-  background: var(--deep-charcoal);
-  border: 1px solid rgba(201, 168, 76, 0.15);
-  border-radius: var(--radius-lg);
-  padding: var(--space-lg);
-  transition: transform var(--transition-med), border-color var(--transition-med);
-}
-
-.feature-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--royal-gold);
-}
-
-.feature-card__icon {
-  font-size: 2.5rem;
-  margin-bottom: var(--space-md);
-}
-
-.feature-card__title {
-  font-size: 1.2rem;
-  color: var(--royal-gold);
-  margin-bottom: var(--space-sm);
-}
-
-.feature-card__body {
-  font-size: 0.9rem;
-  color: var(--muted-grey);
-}
-
-/* ── Quiz Cards ── */
-.quiz-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--space-md);
-}
-
-.quiz-card {
-  background: var(--deep-charcoal);
-  border-radius: var(--radius-md);
-  padding: var(--space-md);
-  border: 1px solid rgba(201, 168, 76, 0.1);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-  transition: border-color var(--transition-fast);
-}
-
-.quiz-card:hover {
-  border-color: var(--royal-gold);
-}
-
-/* SVG icon container inside quiz cards */
-.quiz-card__svg-wrap {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(201, 168, 76, 0.1);
-  border-radius: var(--radius-sm);
-  flex-shrink: 0;
-}
-
-.quiz-card__svg-wrap svg {
-  width: 28px;
-  height: 28px;
-  fill: var(--royal-gold);
-}
-
-/* ── Did You Know Cards ── */
-.did-you-know-card {
-  background: var(--deep-charcoal);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  border: 1px solid rgba(201, 168, 76, 0.1);
-}
-
-/* Blur-up technique: image placeholder blurs in, real image fades over */
-.did-you-know-card__img-wrap {
-  position: relative;
-  width: 100%;
-  height: 180px;
-  background-color: var(--midnight-navy); /* fallback colour while loading */
-  overflow: hidden;
-}
-
-.did-you-know-card__img-placeholder {
-  /* Tiny blurred placeholder — provides colour hint when offline */
-  position: absolute;
-  inset: 0;
-  filter: blur(12px);
-  transform: scale(1.05); /* hides blur edges */
-  object-fit: cover;
-  width: 100%;
-  height: 100%;
-  transition: opacity var(--transition-med);
-}
-
-.did-you-know-card__img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  /* object-fit: cover keeps the image contained — no layout shifts */
-  object-fit: cover;
-  object-position: center;
-  opacity: 0;
-  transition: opacity var(--transition-med);
-}
-
-/* JS adds .loaded class once the image fires its onLoad event */
-.did-you-know-card__img.loaded {
-  opacity: 1;
-}
-
-.did-you-know-card__img.loaded + .did-you-know-card__img-placeholder {
-  opacity: 0;
-}
-
-.did-you-know-card__body {
-  padding: var(--space-md);
-}
-
-/* ── Stat Cards ── */
-.stat-card {
-  background: var(--deep-charcoal);
-  border-radius: var(--radius-md);
-  padding: var(--space-lg);
-  text-align: center;
-  border: 1px solid rgba(201, 168, 76, 0.1);
-}
-
-.stat-card__value {
-  font-family: var(--font-heading);
-  font-size: 2.5rem;
-  color: var(--royal-gold);
-}
-
-.stat-card__label {
+  padding: 1.5rem;
   font-size: 0.85rem;
-  color: var(--muted-grey);
-  margin-top: var(--space-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  border-top: 3px solid #c9a84c;
 }
 
-/* ── Chat Bubble ── */
-.chat-bubble {
-  max-width: 680px;
-  margin: var(--space-md) auto;
-  padding: var(--space-md) var(--space-lg);
-  border-radius: var(--radius-lg);
-  font-size: 0.95rem;
+/* ── HomePage — Explore Section ───────────────────────────── */
+.explore-section {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 4rem 1.5rem;
+}
+
+.explore-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.explore-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin-bottom: 0.75rem;
+}
+
+.explore-subtitle {
+  font-size: 1.05rem;
+  color: #666;
+  max-width: 560px;
+  margin: 0 auto;
   line-height: 1.7;
 }
 
-.chat-bubble--user {
-  background: rgba(74, 144, 217, 0.15);
-  border: 1px solid rgba(74, 144, 217, 0.3);
-  margin-left: auto;
-  border-bottom-right-radius: var(--radius-sm);
+/* Teaser Cards Grid */
+.teasers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
 }
 
-.chat-bubble--ai {
-  background: rgba(201, 168, 76, 0.08);
-  border: 1px solid rgba(201, 168, 76, 0.2);
-  border-bottom-left-radius: var(--radius-sm);
+.teaser-card {
+  background: #fff;
+  border: 2px solid #e8e0d0;
+  border-radius: 14px;
+  padding: 1.75rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
 }
 
-/* ── Difficulty Badge ── */
-.difficulty-badge {
-  display: inline-block;
-  padding: 0.2rem 0.7rem;
+.teaser-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(201, 168, 76, 0.15);
+  border-color: #c9a84c;
+}
+
+.teaser-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.teaser-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.teaser-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #1a1a2e;
+}
+
+.teaser-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffc107;
   border-radius: 999px;
-  font-size: 0.75rem;
+  padding: 0.15rem 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.teaser-tagline {
+  font-size: 0.92rem;
+  color: #555;
+  line-height: 1.65;
+  flex: 1;
+}
+
+.teaser-cta {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #c9a84c;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.teaser-cta:hover {
+  color: #a07830;
+  text-decoration: underline;
+}
+
+/* ── Generic Page Wrapper ─────────────────────────────────── */
+.page-wrapper {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem;
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin-bottom: 0.5rem;
+}
+
+.page-subtitle {
+  color: #666;
+  font-size: 1rem;
+  margin-bottom: 2rem;
+}
+
+/* ── Bible Reader ─────────────────────────────────────────── */
+.br-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 6rem;
+}
+
+.br-nav-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.br-nav-title {
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin-bottom: 0.4rem;
+  font-family: 'Georgia', serif;
+  letter-spacing: 0.02em;
+}
+
+.br-nav-subtitle {
+  color: #666;
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Testament Toggle */
+.br-testament-toggle {
+  display: inline-flex;
+  background: #f0f0f0;
+  border-radius: 999px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.br-testament-btn {
+  padding: 0.5rem 1.4rem;
+  border: none;
+  border-radius: 999px;
+  font-size: 0.95rem;
   font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  color: #555;
+  transition: all 0.2s;
+}
+
+.br-testament-btn--active {
+  background: #c9a84c;
+  color: #fff;
+}
+
+/* Book Grid */
+.br-books-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.br-book-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 0.5rem;
+  border: 2px solid #e8e0d0;
+  border-radius: 10px;
+  background: #fffdf7;
+  cursor: pointer;
+  transition: all 0.2s;
+  gap: 0.3rem;
+}
+
+.br-book-card:hover {
+  border-color: #c9a84c;
+  background: #fff8e7;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(201, 168, 76, 0.2);
+}
+
+.br-book-card__name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #1a1a2e;
+  text-align: center;
+}
+
+.br-book-card__chapters {
+  font-size: 0.75rem;
+  color: #999;
+}
+
+/* Chapter Grid */
+.br-chapters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.br-chapter-btn {
+  padding: 0.8rem 0.5rem;
+  border: 2px solid #e8e0d0;
+  border-radius: 8px;
+  background: #fffdf7;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.br-chapter-btn:hover {
+  border-color: #c9a84c;
+  background: #fff8e7;
+  color: #c9a84c;
+}
+
+/* Back Button */
+.br-back-btn {
+  background: none;
+  border: none;
+  color: #c9a84c;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.4rem 0;
+  margin-bottom: 1rem;
+}
+
+.br-back-btn:hover {
+  text-decoration: underline;
+}
+
+/* Reader Header */
+.br-reader-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.br-reader-heading {
+  text-align: center;
+  flex: 1;
+}
+
+.br-reader-book {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin: 0;
+  font-family: 'Georgia', serif;
+  letter-spacing: 0.02em;
+}
+
+.br-reader-chapter {
+  display: block;
+  font-size: 1.1rem;
+  color: #c9a84c;
+  font-weight: 600;
+  margin-top: 0.2rem;
+}
+
+.br-reader-translation {
+  display: block;
+  font-size: 0.8rem;
+  color: #aaa;
+  margin-top: 0.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Verses */
+.br-verse {
+  font-size: 1.25rem;
+  line-height: 2;
+  color: #1a1a2e;
+  margin-bottom: 0.8rem;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  cursor: pointer;
+}
+
+.br-verse-num {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #c9a84c;
+  margin-right: 0.4rem;
+  vertical-align: super;
+  font-family: sans-serif;
+}
+
+.br-verse-text {
+  line-height: 1.9;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 1.05rem;
+}
+
+/* Loading */
+.br-loading {
+  text-align: center;
+  padding: 4rem 0;
+  color: #888;
+}
+
+.br-loading__spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e8e0d0;
+  border-top-color: #c9a84c;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error */
+.br-error {
+  text-align: center;
+  padding: 3rem;
+  color: #c0392b;
+}
+
+.br-retry-btn {
+  margin-top: 1rem;
+  padding: 0.6rem 1.5rem;
+  background: #c9a84c;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Chapter Navigation */
+.br-chapter-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 3rem;
+  padding: 1.5rem 0;
+  border-top: 2px solid #e8e0d0;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.br-chapter-nav__btn {
+  padding: 0.7rem 1.4rem;
+  background: #c9a84c;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.br-chapter-nav__btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.br-chapter-nav__label {
+  font-weight: 700;
+  color: #1a1a2e;
+  font-size: 1rem;
+}
+
+/* ── Knowledge Hub / Quiz ─────────────────────────────────── */
+.kh-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 6rem;
+}
+
+.kh-home {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.kh-home__icon {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+}
+
+.kh-home__title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin-bottom: 0.75rem;
+}
+
+.kh-home__subtitle {
+  font-size: 1rem;
+  color: #555;
+  max-width: 520px;
+  margin: 0 auto 1.5rem;
+  line-height: 1.7;
+}
+
+.kh-home__meta {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 2rem;
+}
+
+.kh-meta-pill {
+  background: #fff8e7;
+  border: 1px solid #e8d9a0;
+  color: #7a5c00;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+}
+
+/* Category Pills */
+.kh-category-group {
+  margin-bottom: 2rem;
+}
+
+.kh-category-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 0.75rem;
+}
+
+.kh-category-pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.kh-cat-pill {
+  padding: 0.5rem 1.1rem;
+  border: 2px solid #e8e0d0;
+  border-radius: 999px;
+  background: #fffdf7;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.kh-cat-pill:hover {
+  border-color: #c9a84c;
+  color: #c9a84c;
+}
+
+.kh-cat-pill--active {
+  background: #c9a84c;
+  border-color: #c9a84c;
+  color: #fff;
+}
+
+/* Start Button */
+.kh-start-btn {
+  display: inline-block;
+  padding: 0.9rem 2.5rem;
+  background: #c9a84c;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  margin-bottom: 1rem;
+  min-height: 48px;
+}
+
+.kh-start-btn:hover {
+  background: #a07830;
+  transform: translateY(-2px);
+}
+
+.kh-ghost-btn {
+  display: inline-block;
+  padding: 0.8rem 2rem;
+  background: transparent;
+  color: #c9a84c;
+  border: 2px solid #c9a84c;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: 1rem;
+  min-height: 48px;
+}
+
+.kh-ghost-btn:hover {
+  background: #fff8e7;
+}
+
+.kh-home__disclaimer {
+  font-size: 0.8rem;
+  color: #aaa;
+  margin-top: 0.5rem;
+}
+
+/* ── Tier Cards ───────────────────────────────────────────── */
+.kh-tier-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 20px;
+  width: 100%;
+  text-align: left;
+}
+
+.kh-tier-card {
+  border: 2px solid;
+  border-radius: 16px;
+  padding: 18px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  text-align: left;
+}
+
+.kh-tier-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.kh-tier-card__icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.kh-tier-card__title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.kh-tier-card__desc {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.kh-tier-card__footer {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ── XP Badge ─────────────────────────────────────────────── */
+.kh-xp-badge {
+  display: inline-block;
+  color: #fff;
+  padding: 6px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+/* ── Quiz Screen ──────────────────────────────────────────── */
+.kh-quiz {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.kh-quiz__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.kh-quiz__category {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #c9a84c;
+  background: #fff8e7;
+  border: 1px solid #e8d9a0;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+}
+
+.kh-quiz__counter {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #888;
+}
+
+/* Progress Bar */
+.kh-progress-track {
+  height: 6px;
+  background: #e8e0d0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.kh-progress-fill {
+  height: 100%;
+  background: #c9a84c;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+/* Question Card */
+.kh-question-card {
+  background: #fffdf7;
+  border: 2px solid #e8e0d0;
+  border-radius: 14px;
+  padding: 1.75rem 1.5rem;
+}
+
+.kh-question-text {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  line-height: 1.6;
+  font-family: Georgia, serif;
+}
+
+/* Options */
+.kh-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.kh-option {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1.2rem;
+  border: 2px solid #e8e0d0;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.18s;
+  font-size: 0.97rem;
+  font-weight: 500;
+  color: #1a1a2e;
+  min-height: 48px;
+}
+
+.kh-option:hover:not(:disabled) {
+  border-color: #c9a84c;
+  background: #fff8e7;
+}
+
+.kh-option--selected {
+  border-color: #1a1a2e;
+  background: #1a1a2e;
+  color: #fff;
+}
+
+.kh-option:disabled {
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+.kh-option__letter {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f0ece4;
+  color: #555;
+  font-size: 0.8rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.kh-option--selected .kh-option__letter {
+  background: #c9a84c;
+  color: #fff;
+}
+
+.kh-option__text {
+  flex: 1;
+}
+
+/* Footer */
+.kh-quiz__footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.kh-next-btn {
+  padding: 0.85rem 2.2rem;
+  background: #1a1a2e;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+  width: 100%;
+  max-width: 320px;
+  min-height: 48px;
+}
+
+.kh-next-btn:hover:not(:disabled) {
+  background: #c9a84c;
+}
+
+.kh-next-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.kh-no-feedback-note {
+  font-size: 0.78rem;
+  color: #aaa;
+}
+
+/* ── Results Screen ───────────────────────────────────────── */
+.kh-results {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem 0;
+}
+
+.kh-score-circle {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  border: 6px solid #c9a84c;
+  background: #fffdf7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  box-shadow: 0 8px 32px rgba(201, 168, 76, 0.2);
+}
+
+.kh-score-circle__emoji {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.kh-score-circle__score {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1a1a2e;
+}
+
+.kh-score-circle__pct {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #c9a84c;
+}
+
+.kh-results__title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #1a1a2e;
+  text-align: center;
+}
+
+.kh-results__message {
+  font-size: 1rem;
+  color: #555;
+  text-align: center;
+  max-width: 480px;
+  line-height: 1.7;
+  font-style: italic;
+}
+
+/* Answer Review */
+.kh-review {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.kh-review__heading {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #1a1a2e;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  margin-bottom: 0.25rem;
 }
 
-.difficulty-badge--beginner  { background: rgba(80, 200, 120, 0.15); color: #50c878; }
-.difficulty-badge--scholar   { background: rgba(201, 168, 76, 0.15); color: var(--royal-gold); }
-.difficulty-badge--seminary  { background: rgba(200, 80, 80, 0.15);  color: #e05a5a; }
+.kh-review-item {
+  border-radius: 10px;
+  padding: 0.9rem 1.1rem;
+  border-left: 4px solid transparent;
+}
 
-/* ── Footer ── */
-.footer {
-  background-color: var(--deep-charcoal);
-  border-top: 1px solid rgba(201, 168, 76, 0.15);
-  padding: var(--space-lg) 0;
-  text-align: center;
-  color: var(--muted-grey);
+.kh-review-item--correct {
+  background: #f0faf0;
+  border-left-color: #27ae60;
+}
+
+.kh-review-item--wrong {
+  background: #fff5f5;
+  border-left-color: #e74c3c;
+}
+
+.kh-review-item__top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.3rem;
+}
+
+.kh-review-item__num {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.kh-review-item__result {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.kh-review-item--correct .kh-review-item__result { color: #27ae60; }
+.kh-review-item--wrong  .kh-review-item__result  { color: #e74c3c; }
+
+.kh-review-item__question {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 0.25rem;
+}
+
+.kh-review-item__correct-ans {
   font-size: 0.85rem;
+  color: #27ae60;
 }
 
-.footer a {
-  color: var(--muted-grey);
+.kh-review-item__your-ans {
+  font-size: 0.85rem;
+  color: #e74c3c;
 }
 
-.footer a:hover {
-  color: var(--royal-gold);
+.kh-review-item__reference {
+  font-size: 0.78rem;
+  color: #888;
+  margin-top: 4px;
+  font-style: italic;
 }
 
-
-/* ═══════════════════════════════════════════════════════════════
-   RESPONSIVE STYLES — Mobile-First Media Queries
-   Strategy: Performance & Accessibility first.
-   Breakpoints: 480px | 768px | 1024px
-
-   Key rules:
-   • Hero uses CSS gradient on mobile — 0ms load time, no images.
-   • Quiz icons are SVGs — infinitely sharp, under 2 KB each.
-   • Did-You-Know images use object-fit:cover + blur-up placeholder.
-   • All images carry loading="lazy" (applied in JSX components).
-   • Touch targets are minimum 44×44px on all interactive elements.
-   ═══════════════════════════════════════════════════════════════ */
-
-
-/* ─────────────────────────────────────────────
-   BASE MOBILE STYLES  (applies to all screens,
-   then we progressively enhance upward)
-   ───────────────────────────────────────────── */
-
-/* Make sure every image is lazy by default via CSS hint
-   (the loading="lazy" attribute in JSX does the real work) */
-img {
-  content-visibility: auto; /* browser skips rendering off-screen images */
+.kh-results__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
 }
 
-/* Smooth image reveal — works with the .loaded JS class */
-.did-you-know-card__img {
-  will-change: opacity; /* tells the GPU to prepare the fade transition */
+/* ── Semantic Typography ──────────────────────────────────── */
+blockquote {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  line-height: 1.9;
+  font-size: 1.05rem;
 }
 
+/* ── Evening Study / Dark Mode ───────────────────────────── */
+html.dark-mode {
+  --bg-primary:    #0a0500;
+  --bg-secondary:  #110800;
+  --text-primary:  rgba(240, 230, 210, 0.95);
+  --text-muted:    rgba(240, 230, 210, 0.5);
+  --gold:          #c9a84c;
+}
 
-/* ─────────────────────────────────────────────
-   480px — Small phones
-   ───────────────────────────────────────────── */
-@media (max-width: 480px) {
+html.dark-mode body {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
 
-  /* ── Hero: remove any background image, use pure CSS gradient ──
-     This is the performance core — zero bytes fetched for the hero. */
-  .hero {
-    background: linear-gradient(
-      160deg,
-      var(--midnight-navy) 0%,
-      var(--deep-charcoal) 100%
-    ) !important; /* override any inline background-image set in JSX */
-    background-image: none !important;
-    padding: 3rem var(--space-md);
+html.dark-mode .br-page {
+  background: var(--bg-primary);
+}
+
+html.dark-mode .br-book-card {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(201, 168, 76, 0.2);
+}
+
+html.dark-mode .br-book-card__name {
+  color: rgba(240, 230, 210, 0.9);
+}
+
+html.dark-mode .br-book-card__chapters {
+  color: rgba(240, 230, 210, 0.4);
+}
+
+html.dark-mode .br-chapter-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(201, 168, 76, 0.2);
+  color: rgba(240, 230, 210, 0.85);
+}
+
+html.dark-mode .br-verse {
+  color: rgba(240, 230, 210, 0.9);
+}
+
+html.dark-mode .br-verse-text {
+  color: rgba(240, 230, 210, 0.9);
+}
+
+html.dark-mode .br-nav-title,
+html.dark-mode .br-reader-book {
+  color: rgba(240, 230, 210, 0.95);
+}
+
+html.dark-mode .br-nav-subtitle,
+html.dark-mode .br-reader-chapter {
+  color: #c9a84c;
+}
+
+html.dark-mode .br-chapter-nav__label {
+  color: rgba(240, 230, 210, 0.85);
+}
+
+html.dark-mode .br-chapter-nav {
+  border-top-color: rgba(201, 168, 76, 0.2);
+}
+
+html.dark-mode .kh-home__title,
+html.dark-mode .kh-question-text,
+html.dark-mode .kh-results__title,
+html.dark-mode .kh-review__heading,
+html.dark-mode .kh-review-item__question {
+  color: rgba(240, 230, 210, 0.95);
+}
+
+html.dark-mode .kh-home__subtitle,
+html.dark-mode .kh-results__message {
+  color: rgba(240, 230, 210, 0.65);
+}
+
+html.dark-mode .kh-option {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(201, 168, 76, 0.15);
+  color: rgba(240, 230, 210, 0.85);
+}
+
+html.dark-mode .kh-option:hover:not(:disabled) {
+  background: rgba(201, 168, 76, 0.1);
+  border-color: #c9a84c;
+}
+
+html.dark-mode .kh-option--selected {
+  background: #1a1a2e;
+  border-color: #c9a84c;
+  color: #fff;
+}
+
+html.dark-mode .kh-question-card {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(201, 168, 76, 0.2);
+}
+
+html.dark-mode .kh-score-circle {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #c9a84c;
+}
+
+html.dark-mode .kh-score-circle__score {
+  color: rgba(240, 230, 210, 0.95);
+}
+
+html.dark-mode .kh-tier-card__desc {
+  color: rgba(240, 230, 210, 0.6);
+}
+
+html.dark-mode .kh-tier-card {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .kh-review-item--correct {
+  background: rgba(39, 174, 96, 0.1);
+}
+
+html.dark-mode .kh-review-item--wrong {
+  background: rgba(231, 76, 60, 0.1);
+}
+
+html.dark-mode .kh-review-item__reference {
+  color: rgba(240, 230, 210, 0.4);
+}
+
+html.dark-mode .kh-meta-pill {
+  background: rgba(201, 168, 76, 0.1);
+  border-color: rgba(201, 168, 76, 0.3);
+  color: #c9a84c;
+}
+
+html.dark-mode .explore-title {
+  color: rgba(240, 230, 210, 0.95);
+}
+
+html.dark-mode .explore-subtitle {
+  color: rgba(240, 230, 210, 0.55);
+}
+
+html.dark-mode .teaser-card {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(201, 168, 76, 0.15);
+}
+
+html.dark-mode .teaser-title {
+  color: rgba(240, 230, 210, 0.92);
+}
+
+html.dark-mode .teaser-tagline {
+  color: rgba(240, 230, 210, 0.6);
+}
+
+html.dark-mode .page-title {
+  color: rgba(240, 230, 210, 0.95);
+}
+
+html.dark-mode .page-subtitle {
+  color: rgba(240, 230, 210, 0.55);
+}
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE STYLES
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Tablet (max 768px) ── */
+@media (max-width: 768px) {
+  html { font-size: 15px; }
+
+  .page-wrapper    { padding: 2rem 1rem; }
+  .br-page         { padding: 1.5rem 1rem 5rem; }
+  .kh-page         { padding: 1.5rem 1rem 5rem; }
+  .explore-section { padding: 2.5rem 1rem; }
+  .explore-title   { font-size: 1.8rem; }
+
+  .teasers-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
   }
 
-  .hero::before {
-    /* Scale down the gold glow so it fits a small screen */
-    width: 300px;
-    height: 200px;
+  .br-books-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   }
 
-  .hero__title {
-    font-size: 1.75rem;
-  }
-
-  .hero__subtitle {
-    font-size: 0.95rem;
-  }
-
-  .hero__cta-group {
+  .br-reader-header {
     flex-direction: column;
-    align-items: stretch; /* full-width buttons on small phones */
+    align-items: center;
+    text-align: center;
   }
 
-  /* Full-width buttons are easier to tap */
-  .hero__cta-group .btn {
+  .br-chapter-nav {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .kh-results__actions {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+/* ── Mobile (max 640px) ── */
+@media (max-width: 640px) {
+  html { font-size: 14px; }
+
+  .navbar          { padding: 0 1rem; height: 60px; }
+  .navbar__brand   { font-size: 1.1rem; }
+
+  .explore-title    { font-size: 1.5rem; }
+  .explore-subtitle { font-size: 0.95rem; }
+
+  .teasers-grid {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+
+  .teaser-card  { padding: 1.25rem 1rem; }
+  .page-title   { font-size: 1.6rem; }
+  .br-nav-title { font-size: 1.8rem; }
+  .br-reader-book { font-size: 1.6rem; }
+
+  .br-verse-text {
+    font-size: 1rem;
+    line-height: 1.8;
+  }
+
+  .br-books-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.5rem;
+  }
+
+  .br-book-card      { padding: 0.75rem 0.4rem; }
+  .br-book-card__name { font-size: 0.82rem; }
+
+  .br-chapters-grid {
+    grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+    gap: 0.5rem;
+  }
+
+  .br-chapter-btn { padding: 0.65rem 0.4rem; font-size: 0.9rem; }
+
+  .br-chapter-nav__btn {
+    width: 100%;
+    padding: 0.85rem;
+    font-size: 1rem;
+  }
+
+  .kh-home__title    { font-size: 1.6rem; }
+  .kh-home__subtitle { font-size: 0.92rem; }
+  .kh-question-text  { font-size: 1rem; }
+
+  .kh-option {
+    padding: 0.85rem 1rem;
+    font-size: 0.92rem;
+  }
+
+  /* Finger-friendly buttons — minimum 48px tall */
+  .kh-start-btn,
+  .kh-next-btn,
+  .br-retry-btn,
+  .br-chapter-nav__btn {
+    min-height: 48px;
+    font-size: 1rem;
+  }
+
+  .kh-ghost-btn {
+    margin-left: 0;
     width: 100%;
     text-align: center;
   }
 
-  /* ── Navigation: stack logo and links vertically ── */
-  .navbar__links {
+  .kh-results__actions {
     flex-direction: column;
-    gap: var(--space-sm);
-    padding: var(--space-md) 0;
+    align-items: stretch;
   }
 
-  /* ── Cards: single column, full width ── */
-  .feature-grid,
-  .quiz-grid {
-    grid-template-columns: 1fr;
-    gap: var(--space-md);
-  }
-
-  .feature-card,
-  .quiz-card,
-  .stat-card {
-    padding: var(--space-md);
-  }
-
-  /* ── Did You Know image: shorter on tiny screens ── */
-  .did-you-know-card__img-wrap {
-    height: 140px;
-  }
-
-  /* ── Chat bubbles: full width on phones ── */
-  .chat-bubble {
-    max-width: 100%;
-    padding: var(--space-md);
-    margin: var(--space-sm) 0;
-    font-size: 0.9rem;
-  }
-
-  /* ── Stat card value: slightly smaller ── */
-  .stat-card__value {
-    font-size: 2rem;
-  }
-
-  /* ── Section padding: tighter on small screens ── */
-  .section {
-    padding: 2.5rem 0;
-  }
-
-  /* ── Container: full-bleed with comfortable gutters ── */
-  .container {
+  .kh-results__actions button,
+  .kh-results__actions a {
     width: 100%;
-    padding: 0 1rem;
+    text-align: center;
   }
 
-  /* ── All buttons: enforce 44px touch target ── */
-  .btn {
-    min-height: 44px;
-    min-width: 44px;
-    padding: 0.75rem 1.25rem;
-    font-size: 0.9rem;
-  }
+  .kh-tier-card       { padding: 14px; }
+  .kh-tier-card__title { font-size: 16px; }
+  .kh-tier-card__desc  { font-size: 12px; }
+  .kh-xp-badge         { font-size: 12px; padding: 5px 14px; }
 
-  /* ── Footer: extra breathing room on mobile ── */
-  .footer {
-    padding: var(--space-lg) var(--space-md);
-    font-size: 0.8rem;
-  }
+  .kh-score-circle { width: 130px; height: 130px; }
+
+  .footer { padding: 1.25rem 1rem; font-size: 0.8rem; }
 }
 
+/* ── Small phones (max 380px) ── */
+@media (max-width: 380px) {
+  html { font-size: 13px; }
 
-/* ─────────────────────────────────────────────
-   768px — Tablets & large phones (landscape)
-   ───────────────────────────────────────────── */
-@media (min-width: 481px) and (max-width: 768px) {
+  .explore-title  { font-size: 1.35rem; }
+  .kh-home__title { font-size: 1.4rem; }
 
-  /* ── Hero: still CSS-only gradient, slightly more padding ── */
-  .hero {
-    background: linear-gradient(
-      150deg,
-      var(--midnight-navy) 0%,
-      #162032 50%,
-      var(--deep-charcoal) 100%
-    ) !important;
-    background-image: none !important;
-    padding: 4rem var(--space-md);
+  .br-books-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
-
-  .hero__title {
-    font-size: 2.25rem;
-  }
-
-  .hero__subtitle {
-    font-size: 1rem;
-  }
-
-  /* CTA buttons side-by-side but not full-width */
-  .hero__cta-group {
-    flex-direction: row;
-    justify-content: center;
-  }
-
-  /* ── Two-column grids on tablet ── */
-  .feature-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .quiz-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  /* ── Did You Know image: medium height ── */
-  .did-you-know-card__img-wrap {
-    height: 160px;
-  }
-
-  /* ── Chat bubbles: comfortable reading width ── */
-  .chat-bubble {
-    max-width: 90%;
-  }
-
-  /* ── Container: slightly wider gutters ── */
-  .container {
-    width: 92%;
-    padding: 0 1.25rem;
-  }
-
-  /* ── Hamburger visible on tablets too ── */
-  .navbar__hamburger {
-    display: flex;
-  }
-
-  /* Nav links hidden by default — shown when menu is open */
-  .navbar__links {
-    display: none;
-    flex-direction: column;
-    width: 100%;
-    background-color: rgba(13, 27, 42, 0.98);
-    padding: var(--space-md);
-    gap: var(--space-md);
-    border-top: 1px solid rgba(201, 168, 76, 0.15);
-  }
-
-  /* JS toggles this class on the <ul> to show/hide the menu */
-  .navbar__links--open {
-    display: flex;
-  }
-
-  /* Nav links larger touch targets on tablet */
-  .navbar__links a {
-    display: block;
-    padding: 0.6rem 0;
-    font-size: 1rem;
-    min-height: 44px;
-    line-height: 44px;
-  }
-
-  /* Stack navbar inner so hamburger sits on the right */
-  .navbar__inner {
-    flex-wrap: wrap;
-  }
-}
-
-
-/* ─────────────────────────────────────────────
-   max-width: 768px — shared rules for BOTH
-   phone sizes above (avoids repetition)
-   ───────────────────────────────────────────── */
-@media (max-width: 768px) {
-
-  /* Show hamburger on ALL sub-768px screens */
-  .navbar__hamburger {
-    display: flex;
-  }
-
-  /* Hide the link list until toggled open */
-  .navbar__links {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    flex-direction: column;
-    background-color: rgba(13, 27, 42, 0.99);
-    padding: var(--space-md) var(--space-lg);
-    gap: var(--space-md);
-    border-top: 1px solid rgba(201, 168, 76, 0.2);
-    z-index: 200;
-  }
-
-  /* .navbar__links--open is toggled by React useState in Navbar.jsx */
-  .navbar__links--open {
-    display: flex;
-  }
-
-  /* Make the navbar container relative so the dropdown anchors to it */
-  .navbar {
-    position: sticky;
-    top: 0;
-  }
-
-  .navbar__inner {
-    position: relative; /* anchor for the absolute dropdown */
-    flex-wrap: nowrap; /* logo and burger stay on one line */
-  }
-
-  /* Larger tappable nav links */
-  .navbar__links a {
-    display: block;
-    padding: 0.75rem 0;
-    font-size: 1rem;
-    min-height: 44px;
-    line-height: 44px;
-  }
-}
-
-
-/* ─────────────────────────────────────────────
-   1024px — Desktop & wide tablets
-   ───────────────────────────────────────────── */
-@media (min-width: 1024px) {
-
-  /* ── Hero: restore the rich layered gradient + subtle texture ── */
-  .hero {
-    background: linear-gradient(
-      135deg,
-      var(--midnight-navy) 0%,
-      #162032 40%,
-      #1e1e3a 100%
-    );
-    padding: var(--space-xl) 0;
-  }
-
-  .hero__title {
-    font-size: 3.5rem;
-  }
-
-  .hero__subtitle {
-    font-size: 1.25rem;
-  }
-
-  /* ── Hamburger hidden on desktop — full nav visible ── */
-  .navbar__hamburger {
-    display: none;
-  }
-
-  /* Nav links always visible, horizontal row on desktop */
-  .navbar__links {
-    display: flex !important;  /* override any mobile open/close state */
-    flex-direction: row;
-    position: static;
-    background: transparent;
-    padding: 0;
-    border: none;
-    gap: var(--space-lg);
-    width: auto;
-  }
-
-  /* ── Feature grid: up to 4 columns on wide screens ── */
-  .feature-grid {
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  }
-
-  /* ── Quiz grid: 3–4 columns ── */
-  .quiz-grid {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  }
-
-  /* ── Did You Know image: full height ── */
-  .did-you-know-card__img-wrap {
-    height: 180px;
-  }
-
-  /* ── Chat bubbles: comfortable reading width ── */
-  .chat-bubble {
-    max-width: 680px;
-  }
-
-  /* ── Container: standard max-width ── */
-  .container {
-    width: 90%;
-    max-width: 1200px;
-  }
-}
-
-
-/* ─────────────────────────────────────────────
-   PERFORMANCE HELPERS — apply at all sizes
-   These are the "Lazy & Light" engine rules.
-   ───────────────────────────────────────────── */
-
-/* Prevent layout shift on any image that has a known aspect ratio */
-.img-ratio-16-9 {
-  aspect-ratio: 16 / 9;
-  width: 100%;
-  object-fit: cover;
-}
-
-.img-ratio-4-3 {
-  aspect-ratio: 4 / 3;
-  width: 100%;
-  object-fit: cover;
-}
-
-/* Blur-up fade-in: the tiny placeholder blurs while the real image loads */
-.blur-up {
-  filter: blur(10px);
-  transition: filter 0.4s ease;
-}
-
-.blur-up.loaded {
-  filter: blur(0);
-}
-
-/* SVG icon sizing helper — keeps quiz icons crisp at any pixel density */
-.svg-icon {
-  width: 1.5em;
-  height: 1.5em;
-  fill: currentColor;
-  flex-shrink: 0;
-  /* SVGs are code — they render perfectly on Retina without extra files */
 }

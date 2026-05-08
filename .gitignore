@@ -1,0 +1,17 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+
+# Environment variables (keeps your API key safe!)
+.env
+.env.local
+.env.production
+
+# Vite
+.vite
+
+# OS files
+.DS_Store
+Thumbs.db

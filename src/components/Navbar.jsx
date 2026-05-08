@@ -1,38 +1,30 @@
-import React, { useState } from 'react'
-// ── react-router-dom <Link> is used for ALL navigation ──────────────────────
-// IMPORTANT: We never use plain <a href="..."> for internal pages.
-// Why? Because <Link> keeps the React app alive between pages (no full reload).
-// Plain <a> tags would reload the entire app from scratch every click.
+import React, { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { useLanguage } from '../context/LanguageContext.jsx'
+import { playNavClick } from '../hooks/useSound.js'
 
-// ── Navigation link definitions ─────────────────────────────────────────────
-// Add or remove pages here — the Navbar renders them automatically.
-const NAV_LINKS = [
-  { label: 'Home',      path: '/' },
-  { label: 'Bible',     path: '/bible' },
-  { label: 'Quizzes',   path: '/quizzes' },
-  { label: 'Ask AI',    path: '/ai' },
-  { label: 'Dashboard', path: '/dashboard' },
-]
-
-export default function Navbar() {
-  // Track whether the mobile menu is open or closed
+export default function Navbar({ toggleSlot }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const location  = useLocation()
+  const { t }     = useLanguage()
 
-  // useLocation tells us which page the user is currently on
-  // We use this to highlight the active nav link
-  const location = useLocation()
+  // Auto-close menu when page changes
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [location.pathname])
 
-  // Toggle the mobile hamburger menu open/closed
+  const closeMenu  = () => setMenuOpen(false)
   const toggleMenu = () => setMenuOpen(prev => !prev)
 
-  // Close the menu when a link is clicked (important on mobile)
-  const closeMenu = () => setMenuOpen(false)
+  const isActive = (path) =>
+    path === '/'
+      ? location.pathname === '/'
+      : location.pathname === path
 
   return (
     <>
-      {/* ── Navbar Styles ── */}
       <style>{`
+        /* ── Navbar Base ── */
         .navbar {
           background-color: #1a0a2e;
           padding: 0 2rem;
@@ -43,28 +35,26 @@ export default function Navbar() {
           position: sticky;
           top: 0;
           z-index: 1000;
-          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+          box-shadow: 0 2px 12px rgba(0,0,0,0.4);
         }
 
-        /* ── Brand / Logo ── */
+        /* ── Brand ── */
         .navbar__brand {
           text-decoration: none;
           display: flex;
           align-items: center;
           gap: 0.5rem;
-        }
-        .navbar__logo-icon {
-          font-size: 1.6rem;
+          flex-shrink: 0;
         }
         .navbar__brand-name {
-          font-family: 'Playfair Display', serif;
+          font-family: 'Playfair Display', Georgia, serif;
           font-size: 1.4rem;
           font-weight: 700;
           color: #f0c040;
           letter-spacing: 0.03em;
         }
         .navbar__brand-tagline {
-          font-family: 'Montserrat', sans-serif;
+          font-family: 'Montserrat', system-ui, sans-serif;
           font-size: 0.65rem;
           color: #a89bc2;
           letter-spacing: 0.08em;
@@ -72,203 +62,388 @@ export default function Navbar() {
           margin-top: -2px;
         }
 
-        /* ── Desktop nav links ── */
+        /* ── Desktop Links ── */
         .navbar__links {
           display: flex;
           align-items: center;
-          gap: 0.25rem;
+          gap: 0.35rem;
           list-style: none;
           margin: 0;
           padding: 0;
+          flex-wrap: nowrap;
         }
         .navbar__links a {
-          font-family: 'Montserrat', sans-serif;
-          font-size: 0.875rem;
+          font-family: 'Montserrat', system-ui, sans-serif;
+          font-size: 0.78rem;
           font-weight: 500;
           color: #c8b8e8;
           text-decoration: none;
-          padding: 0.5rem 0.9rem;
+          padding: 0.45rem 0.75rem;
           border-radius: 6px;
           transition: color 0.2s, background-color 0.2s;
-          letter-spacing: 0.03em;
+          white-space: nowrap;
+          display: block;
         }
         .navbar__links a:hover {
-          color: #ffffff;
-          background-color: rgba(240, 192, 64, 0.12);
+          color: #fff;
+          background-color: rgba(240,192,64,0.12);
         }
-        /* Active page link gets a gold underline highlight */
         .navbar__links a.active {
           color: #f0c040;
-          background-color: rgba(240, 192, 64, 0.15);
+          background-color: rgba(240,192,64,0.15);
           font-weight: 600;
         }
-
-        /* ── CTA Button ── */
-        .navbar__cta {
-          font-family: 'Montserrat', sans-serif;
-          font-size: 0.85rem;
+        .navbar__links a.progress-link {
+          color: #f0c040;
+          border: 1px solid rgba(240,192,64,0.35);
+          border-radius: 20px;
+          padding: 0.35rem 0.85rem;
           font-weight: 600;
-          background: linear-gradient(135deg, #f0c040, #d4a017);
-          color: #1a0a2e;
-          border: none;
-          border-radius: 8px;
-          padding: 0.5rem 1.2rem;
-          cursor: pointer;
-          text-decoration: none;
+        }
+        .navbar__links a.progress-link:hover,
+        .navbar__links a.progress-link.active {
+          background-color: rgba(240,192,64,0.18);
+        }
+
+        /* ── Divider ── */
+        .navbar__divider {
+          width: 1px;
+          height: 22px;
+          background: rgba(240,192,64,0.2);
+          flex-shrink: 0;
+          margin: 0 0.25rem;
+        }
+
+        /* ── Right Side ── */
+        .navbar__right {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          flex-shrink: 0;
           margin-left: 0.75rem;
-          transition: opacity 0.2s, transform 0.15s;
-          letter-spacing: 0.04em;
-        }
-        .navbar__cta:hover {
-          opacity: 0.9;
-          transform: translateY(-1px);
-          color: #1a0a2e;
         }
 
-        /* ── Hamburger button (mobile only) ── */
+        /* ── Hamburger Button ── */
         .navbar__hamburger {
           display: none;
           flex-direction: column;
           justify-content: space-between;
-          width: 26px;
-          height: 18px;
+          width: 28px;
+          height: 20px;
           background: none;
           border: none;
           cursor: pointer;
           padding: 0;
+          flex-shrink: 0;
         }
         .navbar__hamburger span {
           display: block;
           height: 2px;
           background-color: #f0c040;
           border-radius: 2px;
-          transition: all 0.3s;
+          transition: all 0.3s ease;
+        }
+        .navbar__hamburger span.open:nth-child(1) {
+          transform: translateY(9px) rotate(45deg);
+        }
+        .navbar__hamburger span.open:nth-child(2) {
+          opacity: 0;
+          transform: scaleX(0);
+        }
+        .navbar__hamburger span.open:nth-child(3) {
+          transform: translateY(-9px) rotate(-45deg);
         }
 
-        /* ── Mobile menu panel ── */
+        /* ── Mobile Menu ── */
         .navbar__mobile-menu {
-          display: none;
+          background-color: #1a0a2e;
+          border-top: 1px solid rgba(240,192,64,0.2);
+          padding: 0.75rem 1.25rem 1.5rem;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+          animation: slideDown 0.25s ease;
+          max-height: 85vh;
+          overflow-y: auto;
+          position: sticky;
+          top: 70px;
+          z-index: 999;
+        }
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-10px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .navbar__mobile-menu ul {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 0.1rem;
+        }
+        .navbar__mobile-menu a {
+          display: flex;
+          align-items: center;
+          font-family: 'Montserrat', system-ui, sans-serif;
+          font-size: 1rem;
+          font-weight: 500;
+          color: #c8b8e8;
+          text-decoration: none;
+          padding: 0.85rem 1rem;
+          border-radius: 8px;
+          transition: color 0.2s, background-color 0.2s;
+          min-height: 48px;
+        }
+        .navbar__mobile-menu a:hover,
+        .navbar__mobile-menu a.active {
+          color: #f0c040;
+          background-color: rgba(240,192,64,0.1);
+        }
+        .navbar__mobile-menu a.progress-link {
+          color: #f0c040;
+          font-weight: 700;
+          border: 1px solid rgba(240,192,64,0.3);
+          border-radius: 10px;
+          margin-top: 0.25rem;
+        }
+        .navbar__mobile-menu a.progress-link:hover,
+        .navbar__mobile-menu a.progress-link.active {
+          background-color: rgba(240,192,64,0.15);
+        }
+        .navbar__mobile-divider {
+          height: 1px;
+          background: rgba(240,192,64,0.15);
+          margin: 0.6rem 0;
         }
 
-        /* ── Responsive: below 768px ── */
+        /* ── Tablet adjustments ── */
+        @media (max-width: 1200px) {
+          .navbar__links a {
+            font-size: 0.7rem;
+            padding: 0.4rem 0.55rem;
+          }
+        }
+
+        /* ── Mobile: hide desktop links, show hamburger ── */
         @media (max-width: 768px) {
+          .navbar {
+            padding: 0 1.25rem;
+            height: 60px;
+          }
           .navbar__links {
-            display: none; /* hide desktop links */
+            display: none;
           }
           .navbar__hamburger {
             display: flex;
           }
+          .navbar__right {
+            margin-left: 0;
+          }
           .navbar__mobile-menu {
-            display: block;
-            background-color: #1a0a2e;
-            border-top: 1px solid rgba(240, 192, 64, 0.2);
-            padding: 1rem 2rem 1.5rem;
+            top: 60px;
           }
-          .navbar__mobile-menu ul {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 0.25rem;
+          .navbar__brand-name {
+            font-size: 1.2rem;
           }
-          .navbar__mobile-menu a {
-            display: block;
-            font-family: 'Montserrat', sans-serif;
+        }
+
+        /* ── Very small phones ── */
+        @media (max-width: 380px) {
+          .navbar {
+            padding: 0 1rem;
+          }
+          .navbar__brand-name {
             font-size: 1rem;
-            font-weight: 500;
-            color: #c8b8e8;
-            text-decoration: none;
-            padding: 0.65rem 0.5rem;
-            border-radius: 6px;
-            transition: color 0.2s, background-color 0.2s;
           }
-          .navbar__mobile-menu a:hover,
-          .navbar__mobile-menu a.active {
-            color: #f0c040;
-            background-color: rgba(240, 192, 64, 0.1);
-          }
-          .navbar__cta {
-            display: block;
-            text-align: center;
-            margin: 1rem 0 0;
+          .navbar__brand-tagline {
+            display: none;
           }
         }
       `}</style>
 
-      {/* ── Main Navbar Bar ── */}
+      {/* ════════ NAVBAR BAR ════════ */}
       <nav className="navbar" role="navigation" aria-label="Main navigation">
 
-        {/* Brand logo — Link takes user home */}
-        <Link to="/" className="navbar__brand" onClick={closeMenu}>
-          <span className="navbar__logo-icon" aria-hidden="true">✦</span>
+        {/* Brand */}
+        <Link
+          to="/"
+          className="navbar__brand"
+          onClick={() => { closeMenu(); playNavClick() }}
+        >
+          <span style={{ fontSize: '1.6rem' }}>✦</span>
           <div>
             <div className="navbar__brand-name">ScriptureHub</div>
             <div className="navbar__brand-tagline">by Silas Clergy</div>
           </div>
         </Link>
 
-        {/* ── Desktop Navigation Links ── */}
+        {/* Desktop Links */}
         <ul className="navbar__links" role="list">
-          {NAV_LINKS.map(link => (
-            <li key={link.path}>
-              {/*
-                className receives 'active' when this link matches the current page.
-                location.pathname === link.path handles exact matching.
-                This gives users a clear visual cue of where they are.
-              */}
-              <Link
-                to={link.path}
-                className={location.pathname === link.path ? 'active' : ''}
-                aria-current={location.pathname === link.path ? 'page' : undefined}
-              >
-                {link.label}
-              </Link>
-            </li>
-          ))}
-
-          {/* Start Studying CTA — separate visual emphasis */}
           <li>
-            <Link to="/quizzes" className="navbar__cta">
-              Start Studying
+            <Link to="/" className={isActive('/') ? 'active' : ''}
+              onClick={() => { closeMenu(); playNavClick() }}>
+              {t('home')}
+            </Link>
+          </li>
+          <li>
+            <Link to="/bible" className={isActive('/bible') ? 'active' : ''}
+              onClick={() => { closeMenu(); playNavClick() }}>
+              {t('bible')}
+            </Link>
+          </li>
+          <li>
+            <Link to="/quizzes" className={isActive('/quizzes') ? 'active' : ''}
+              onClick={() => { closeMenu(); playNavClick() }}>
+              {t('quizzes')}
+            </Link>
+          </li>
+          <li>
+            <Link to="/ai" className={isActive('/ai') ? 'active' : ''}
+              onClick={() => { closeMenu(); playNavClick() }}>
+              {t('askAI')}
+            </Link>
+          </li>
+          <li>
+            <Link to="/dashboard" className={isActive('/dashboard') ? 'active' : ''}
+              onClick={() => { closeMenu(); playNavClick() }}>
+              {t('dashboard')}
+            </Link>
+          </li>
+          <li>
+            <Link to="/did-you-know" className={isActive('/did-you-know') ? 'active' : ''}
+              onClick={() => { closeMenu(); playNavClick() }}>
+              {t('didYouKnow')}
+            </Link>
+          </li>
+          <li aria-hidden="true"><div className="navbar__divider" /></li>
+          <li>
+            <Link to="/games" className={isActive('/games') ? 'active' : ''}
+              onClick={() => { closeMenu(); playNavClick() }}>
+              🎮 {t('games')}
+            </Link>
+          </li>
+          <li>
+            <Link to="/community" className={isActive('/community') ? 'active' : ''}
+              onClick={() => { closeMenu(); playNavClick() }}>
+              🏛️ {t('community')}
+            </Link>
+          </li>
+          <li>
+            <Link to="/settings" className={isActive('/settings') ? 'active' : ''}
+              onClick={() => { closeMenu(); playNavClick() }}>
+              ⚙️ {t('settings')}
+            </Link>
+          </li>
+          <li aria-hidden="true"><div className="navbar__divider" /></li>
+          <li>
+            <Link
+              to="/progress"
+              className={`progress-link${isActive('/progress') ? ' active' : ''}`}
+              onClick={() => { closeMenu(); playNavClick() }}
+            >
+              📊 Progress
             </Link>
           </li>
         </ul>
 
-        {/* ── Mobile Hamburger Button ── */}
-        <button
-          className="navbar__hamburger"
-          onClick={toggleMenu}
-          aria-expanded={menuOpen}
-          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-        >
-          <span />
-          <span />
-          <span />
-        </button>
+        {/* Right: Dark mode toggle + Hamburger */}
+        <div className="navbar__right">
+          {toggleSlot}
+          <button
+            className="navbar__hamburger"
+            onClick={() => { toggleMenu(); playNavClick() }}
+            aria-expanded={menuOpen}
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          >
+            <span className={menuOpen ? 'open' : ''} />
+            <span className={menuOpen ? 'open' : ''} />
+            <span className={menuOpen ? 'open' : ''} />
+          </button>
+        </div>
+
       </nav>
 
-      {/* ── Mobile Dropdown Menu ── */}
-      {/* Only rendered in the DOM when menuOpen is true */}
+      {/* ════════ MOBILE DROPDOWN MENU ════════ */}
       {menuOpen && (
-        <div className="navbar__mobile-menu" role="navigation" aria-label="Mobile navigation">
+        <div className="navbar__mobile-menu" role="dialog" aria-label="Mobile navigation">
+
+          {/* Main pages */}
           <ul role="list">
-            {NAV_LINKS.map(link => (
-              <li key={link.path}>
-                <Link
-                  to={link.path}
-                  className={location.pathname === link.path ? 'active' : ''}
-                  onClick={closeMenu}
-                  aria-current={location.pathname === link.path ? 'page' : undefined}
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
+            <li>
+              <Link to="/" className={isActive('/') ? 'active' : ''}
+                onClick={() => { closeMenu(); playNavClick() }}>
+                🏠 {t('home')}
+              </Link>
+            </li>
+            <li>
+              <Link to="/bible" className={isActive('/bible') ? 'active' : ''}
+                onClick={() => { closeMenu(); playNavClick() }}>
+                📖 {t('bible')}
+              </Link>
+            </li>
+            <li>
+              <Link to="/quizzes" className={isActive('/quizzes') ? 'active' : ''}
+                onClick={() => { closeMenu(); playNavClick() }}>
+                🧠 {t('quizzes')}
+              </Link>
+            </li>
+            <li>
+              <Link to="/ai" className={isActive('/ai') ? 'active' : ''}
+                onClick={() => { closeMenu(); playNavClick() }}>
+                🤖 {t('askAI')}
+              </Link>
+            </li>
+            <li>
+              <Link to="/dashboard" className={isActive('/dashboard') ? 'active' : ''}
+                onClick={() => { closeMenu(); playNavClick() }}>
+                📈 {t('dashboard')}
+              </Link>
+            </li>
+            <li>
+              <Link to="/did-you-know" className={isActive('/did-you-know') ? 'active' : ''}
+                onClick={() => { closeMenu(); playNavClick() }}>
+                💡 {t('didYouKnow')}
+              </Link>
+            </li>
           </ul>
-          <Link to="/quizzes" className="navbar__cta" onClick={closeMenu}>
-            Start Studying
-          </Link>
+
+          <div className="navbar__mobile-divider" />
+
+          {/* Extra pages */}
+          <ul role="list">
+            <li>
+              <Link to="/games" className={isActive('/games') ? 'active' : ''}
+                onClick={() => { closeMenu(); playNavClick() }}>
+                🎮 {t('games')}
+              </Link>
+            </li>
+            <li>
+              <Link to="/community" className={isActive('/community') ? 'active' : ''}
+                onClick={() => { closeMenu(); playNavClick() }}>
+                🏛️ {t('community')}
+              </Link>
+            </li>
+            <li>
+              <Link to="/settings" className={isActive('/settings') ? 'active' : ''}
+                onClick={() => { closeMenu(); playNavClick() }}>
+                ⚙️ {t('settings')}
+              </Link>
+            </li>
+          </ul>
+
+          <div className="navbar__mobile-divider" />
+
+          {/* Progress */}
+          <ul role="list">
+            <li>
+              <Link
+                to="/progress"
+                className={`progress-link${isActive('/progress') ? ' active' : ''}`}
+                onClick={() => { closeMenu(); playNavClick() }}
+              >
+                📊 My Study Progress
+              </Link>
+            </li>
+          </ul>
+
         </div>
       )}
     </>
