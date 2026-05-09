@@ -1,10 +1,8 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 
 // ─── CONFIGURATION ───────────────────────────────────────────────────────────
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY
-// Groq uses an OpenAI-compatible endpoint
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-// We use Llama 3.3 70B for the most "human" and wise responses
 const MODEL_NAME = "llama-3.3-70b-versatile"
 
 const SYSTEM_PROMPT = `You are Pastor Silas, a warm, faith-filled Nigerian/African pastor with over 30 years of ministry experience. You are known for your wisdom and ability to connect God's Word to everyday life.
@@ -74,7 +72,50 @@ export default function AIAdvicePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [speakingIndex, setSpeakingIndex] = useState(null)
+  const [isListening, setIsListening] = useState(false)
   const messagesEndRef = useRef(null)
+
+  // Speech Recognition Setup
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+  const recognition = useRef(null)
+
+  useEffect(() => {
+    if (SpeechRecognition) {
+      recognition.current = new SpeechRecognition()
+      recognition.current.continuous = false
+      recognition.current.interimResults = false
+      recognition.current.lang = 'en-US'
+
+      recognition.current.onresult = (event) => {
+        const transcript = event.results[0][0].transcript
+        setInput(transcript)
+        setIsListening(false)
+      }
+
+      recognition.current.onerror = (event) => {
+        console.error("Speech error:", event.error)
+        setIsListening(false)
+      }
+
+      recognition.current.onend = () => {
+        setIsListening(false)
+      }
+    }
+  }, [SpeechRecognition])
+
+  const toggleListening = () => {
+    if (!recognition.current) {
+      alert("Voice recognition is not supported in this browser. Please use Chrome or Safari.")
+      return
+    }
+
+    if (isListening) {
+      recognition.current.stop()
+    } else {
+      setIsListening(true)
+      recognition.current.start()
+    }
+  }
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -83,7 +124,7 @@ export default function AIAdvicePage() {
   const sendMessage = async () => {
     if (!input.trim() || loading) return
     if (!GROQ_API_KEY) {
-      setError('Groq API key is missing. Please check your .env file.')
+      setError('Groq API key is missing. Please check your Vercel settings.')
       return
     }
 
@@ -97,7 +138,6 @@ export default function AIAdvicePage() {
     setSpeakingIndex(null)
 
     try {
-      // Groq uses the Standard Chat Completion payload
       const response = await fetch(GROQ_API_URL, {
         method: 'POST',
         headers: { 
@@ -125,8 +165,6 @@ export default function AIAdvicePage() {
       const assistantMessage = { role: 'assistant', content: assistantContent }
 
       setMessages(prev => [...prev, assistantMessage])
-      
-      // Auto-speak the response
       setSpeakingIndex(updatedMessages.length)
       speakText(assistantContent, () => setSpeakingIndex(null))
 
@@ -194,17 +232,55 @@ export default function AIAdvicePage() {
         </div>
 
         {/* Input area */}
-        <div style={{ padding: '1rem', borderTop: '1px solid rgba(109,191,130,0.2)', display: 'flex', gap: '0.5rem' }}>
-          <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown}
-            placeholder="Speak your heart..." style={{
+        <div style={{ padding: '1rem', borderTop: '1px solid rgba(109,191,130,0.2)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          
+          {/* Microphone Button */}
+          <button 
+            onClick={toggleListening}
+            title="Speak your heart"
+            style={{
+              background: isListening ? '#ff4d4d' : 'rgba(255,255,255,0.1)',
+              border: 'none',
+              borderRadius: '50%',
+              width: '45px',
+              height: '45px',
+              cursor: 'pointer',
+              fontSize: '1.2rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.3s ease',
+              animation: isListening ? 'pulse 1.5s infinite' : 'none'
+            }}
+          >
+            {isListening ? '🛑' : '🎤'}
+          </button>
+
+          <textarea 
+            value={input} 
+            onChange={e => setInput(e.target.value)} 
+            onKeyDown={handleKeyDown}
+            placeholder={isListening ? "Listening..." : "Speak your heart..."} 
+            style={{
               flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(109,191,130,0.3)',
-              borderRadius: '10px', padding: '0.75rem', color: '#d8f3dc', resize: 'none', outline: 'none'
+              borderRadius: '10px', padding: '0.75rem', color: '#d8f3dc', resize: 'none', outline: 'none',
+              height: '45px'
           }} />
+          
           <button onClick={sendMessage} disabled={loading || !input.trim()} style={{
-              background: '#2d6a4f', color: '#fff', border: 'none', borderRadius: '10px', padding: '0 1.2rem', cursor: 'pointer'
+              background: '#2d6a4f', color: '#fff', border: 'none', borderRadius: '10px', padding: '0 1.2rem', height: '45px', cursor: 'pointer'
           }}>Send 🙏</button>
         </div>
       </div>
+
+      {/* Animation Styles */}
+      <style>{`
+        @keyframes pulse {
+          0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.7); }
+          70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(255, 77, 77, 0); }
+          100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 77, 77, 0); }
+        }
+      `}</style>
     </div>
   )
 }
