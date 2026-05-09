@@ -14,14 +14,14 @@ import VoiceGuide       from './components/VoiceGuide.jsx'
 import HomePage            from './pages/HomePage.jsx'
 import BibleReaderPage     from './pages/BibleReaderPage.jsx'
 import KnowledgeHubPage    from './pages/KnowledgeHubPage.jsx'
-import AIConsultantPage    from './pages/AIConsultantPage.jsx'
+import AIAdvicePage        from './pages/AIAdvicePage.jsx'
 import GrowthDashboardPage from './pages/GrowthDashboardPage.jsx'
 import DidYouKnowPage      from './pages/DidYouKnowPage.jsx'
 import GamesPage           from './pages/GamesPage.jsx'
 import CommunityPage       from './pages/CommunityPage.jsx'
 import SettingsPage        from './pages/SettingsPage.jsx'
 import NotFoundPage        from './pages/NotFoundPage.jsx'
-import StudyProgressPage   from './pages/StudyProgressPage.jsx'   // ✅ NEW
+import StudyProgressPage   from './pages/StudyProgressPage.jsx'
 
 function ConditionalFooter() {
   const { pathname } = useLocation()
@@ -43,13 +43,13 @@ function AppShell() {
           <Route path="/"             element={<HomePage />} />
           <Route path="/bible"        element={<BibleReaderPage />} />
           <Route path="/quizzes"      element={<KnowledgeHubPage />} />
-          <Route path="/ai"           element={<AIConsultantPage />} />
+          <Route path="/ai"           element={<AIAdvicePage />} />
           <Route path="/dashboard"    element={<GrowthDashboardPage />} />
           <Route path="/did-you-know" element={<DidYouKnowPage />} />
           <Route path="/games"        element={<GamesPage />} />
           <Route path="/community"    element={<CommunityPage />} />
           <Route path="/settings"     element={<SettingsPage />} />
-          <Route path="/progress"     element={<StudyProgressPage />} />  {/* ✅ NEW */}
+          <Route path="/progress"     element={<StudyProgressPage />} />
           <Route path="*"             element={<NotFoundPage />} />
         </Routes>
       </main>

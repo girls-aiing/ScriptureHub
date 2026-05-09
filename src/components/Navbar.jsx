@@ -8,7 +8,6 @@ export default function Navbar({ toggleSlot }) {
   const location  = useLocation()
   const { t }     = useLanguage()
 
-  // Auto-close menu when page changes
   useEffect(() => {
     setMenuOpen(false)
   }, [location.pathname])
@@ -298,7 +297,7 @@ export default function Navbar({ toggleSlot }) {
           <li>
             <Link to="/ai" className={isActive('/ai') ? 'active' : ''}
               onClick={() => { closeMenu(); playNavClick() }}>
-              {t('askAI')}
+              🤖 AI Advisor
             </Link>
           </li>
           <li>
@@ -388,7 +387,7 @@ export default function Navbar({ toggleSlot }) {
             <li>
               <Link to="/ai" className={isActive('/ai') ? 'active' : ''}
                 onClick={() => { closeMenu(); playNavClick() }}>
-                🤖 {t('askAI')}
+                🤖 AI Advisor
               </Link>
             </li>
             <li>
