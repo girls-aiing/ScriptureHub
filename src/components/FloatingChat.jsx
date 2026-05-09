@@ -30,7 +30,43 @@ export default function FloatingChat() {
   const [input, setInput]     = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
+  const [isListening, setIsListening] = useState(false)
   const messagesEndRef        = useRef(null)
+
+  // 🎤 Speech Recognition Setup
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+  const recognition = useRef(null)
+
+  useEffect(() => {
+    if (SpeechRecognition) {
+      recognition.current = new SpeechRecognition()
+      recognition.current.continuous = false
+      recognition.current.interimResults = false
+      recognition.current.lang = 'en-US'
+
+      recognition.current.onresult = (event) => {
+        const transcript = event.results[0][0].transcript
+        setInput(transcript)
+        setIsListening(false)
+      }
+
+      recognition.current.onerror = () => setIsListening(false)
+      recognition.current.onend = () => setIsListening(false)
+    }
+  }, [SpeechRecognition])
+
+  const toggleListening = () => {
+    if (!recognition.current) {
+      alert("Voice recognition is not supported in this browser. Please use Chrome or Safari.")
+      return
+    }
+    if (isListening) {
+      recognition.current.stop()
+    } else {
+      setIsListening(true)
+      recognition.current.start()
+    }
+  }
 
   useEffect(() => {
     if (open) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -99,12 +135,8 @@ export default function FloatingChat() {
 
   return (
     <div style={styles.wrapper}>
-
-      {/* ── Chat Panel ── */}
       {open && (
         <div style={styles.panel}>
-
-          {/* Header */}
           <div style={styles.header}>
             <div style={styles.headerLeft}>
               <span style={styles.headerIcon}>✝</span>
@@ -116,7 +148,6 @@ export default function FloatingChat() {
             <button onClick={() => setOpen(false)} style={styles.closeBtn}>✕</button>
           </div>
 
-          {/* Messages */}
           <div style={styles.messages}>
             {messages.map((msg, i) => (
               <div key={i} style={{
@@ -155,20 +186,29 @@ export default function FloatingChat() {
               </div>
             )}
 
-            {error && (
-              <p style={styles.errorMsg}>⚠️ {error}</p>
-            )}
-
+            {error && <p style={styles.errorMsg}>⚠️ {error}</p>}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
           <div style={styles.inputArea}>
+            {/* 🎤 Voice Recognition Button */}
+            <button 
+              onClick={toggleListening}
+              style={{
+                ...styles.micBtn,
+                background: isListening ? '#f0c040' : 'rgba(255,255,255,0.08)',
+                animation: isListening ? 'pulse-gold 1.5s infinite' : 'none',
+                color: isListening ? '#1a0a00' : '#f0c040',
+              }}
+            >
+              {isListening ? '🛑' : '🎤'}
+            </button>
+
             <textarea
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask about any verse or topic..."
+              placeholder={isListening ? "Listening to you..." : "Ask Dr. Clergy..."}
               rows={2}
               style={styles.textarea}
             />
@@ -187,21 +227,26 @@ export default function FloatingChat() {
               >
                 Send ✝
               </button>
-              <button onClick={clearChat} style={styles.clearBtn}>New Chat</button>
+              <button onClick={clearChat} style={styles.clearBtn}>New</button>
             </div>
           </div>
-
-          {/* Hint */}
           <p style={styles.hint}>Enter to send · Shift+Enter for new line</p>
         </div>
       )}
 
-      {/* ── Floating Button ── */}
       <button onClick={() => setOpen(prev => !prev)} style={styles.fab}>
         {open ? '✕' : '✝'}
         <span style={styles.fabLabel}>{open ? 'Close' : 'Ask Dr. Clergy'}</span>
       </button>
 
+      {/* Animation Styles */}
+      <style>{`
+        @keyframes pulse-gold {
+          0% { box-shadow: 0 0 0 0 rgba(240, 192, 64, 0.7); }
+          70% { box-shadow: 0 0 0 10px rgba(240, 192, 64, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(240, 192, 64, 0); }
+        }
+      `}</style>
     </div>
   )
 }
@@ -314,7 +359,20 @@ const styles = {
     padding: '0.75rem 1rem',
     borderTop: '1px solid rgba(240,192,64,0.15)',
     background: 'rgba(0,0,0,0.2)',
-    alignItems: 'flex-end',
+    alignItems: 'center',
+  },
+  micBtn: {
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    border: '1px solid rgba(240,192,64,0.3)',
+    cursor: 'pointer',
+    fontSize: '1.1rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.3s ease',
+    flexShrink: 0,
   },
   textarea: {
     flex: 1,
@@ -328,22 +386,23 @@ const styles = {
     resize: 'none',
     outline: 'none',
     lineHeight: '1.5',
+    height: '40px',
   },
   sendBtn: {
     border: 'none',
     borderRadius: '8px',
-    padding: '0.55rem 0.9rem',
+    padding: '0.4rem 0.7rem',
     fontWeight: 'bold',
-    fontSize: '0.82rem',
+    fontSize: '0.75rem',
     transition: 'all 0.2s',
   },
   clearBtn: {
     background: 'transparent',
     border: '1px solid rgba(240,192,64,0.3)',
     borderRadius: '8px',
-    padding: '0.4rem 0.9rem',
+    padding: '0.3rem 0.7rem',
     color: '#c8a96e',
-    fontSize: '0.75rem',
+    fontSize: '0.7rem',
     cursor: 'pointer',
   },
   hint: {
