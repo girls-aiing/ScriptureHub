@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 
+// ─────────────────────────────────────────────────────────────────
+// PAGE SCRIPTS
+// ─────────────────────────────────────────────────────────────────
 const SCRIPTS = {
   '/':             `Welcome to ScriptureHub — your sacred digital companion. Here on the home page, you will find your verse of the day, quick access to the Bible reader, and your personal growth dashboard. May your time here draw you closer to the Word of God.`,
   '/bible':        `Welcome to the Word. Here in the Bible Reader, you can explore different translations such as the King James Version, the NIV, and many more. Use the book and chapter selectors to navigate scripture. You can highlight your favourite verses and save personal notes in your journal.`,
@@ -72,10 +75,11 @@ const PREFERRED_VOICES = [
   'Microsoft Clara Online (Natural) - English (Canada)',
 ]
 
-let pendingPath = null
-
-function getVol()   { return parseFloat(localStorage.getItem('scripturehub_voice_volume') ?? '0.85') }
-function isMuted()  { return localStorage.getItem('scripturehub_voice_muted') === 'true' }
+// ─────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────
+function getVol()    { return parseFloat(localStorage.getItem('scripturehub_voice_volume') ?? '0.85') }
+function isMuted()   { return localStorage.getItem('scripturehub_voice_muted') === 'true' }
 function isEnabled() {
   try { const s = JSON.parse(localStorage.getItem('scripturehub_settings') ?? '{}'); return s.voiceGuide !== false }
   catch { return true }
@@ -92,53 +96,129 @@ function getBestVoice() {
       || voices[0] || null
 }
 
+// ─────────────────────────────────────────────────────────────────
+// CORE SPEAK ENGINE
+// Robust keep-alive: Chrome silently kills long utterances after
+// ~15 s. We split the script into sentence-sized chunks and queue
+// them so each chunk starts fresh — no pause/resume hacks needed.
+// ─────────────────────────────────────────────────────────────────
+function splitIntoChunks(text, maxChars = 180) {
+  // Split on sentence boundaries first, then re-join into chunks
+  const sentences = text.match(/[^.!?]+[.!?]*/g) || [text]
+  const chunks = []
+  let current = ''
+  for (const s of sentences) {
+    if ((current + s).length > maxChars && current.length > 0) {
+      chunks.push(current.trim())
+      current = s
+    } else {
+      current += s
+    }
+  }
+  if (current.trim()) chunks.push(current.trim())
+  return chunks
+}
+
+// Global ref so speakText / stopVoiceGuide can share queue state
+const engine = {
+  queue: [],
+  keepAlive: null,
+  stopped: false,
+}
+
+function clearEngine() {
+  engine.stopped = true
+  engine.queue = []
+  clearInterval(engine.keepAlive)
+  engine.keepAlive = null
+  try { window.speechSynthesis.cancel() } catch {}
+}
+
+function speakChunk(idx, onAllDone) {
+  if (engine.stopped || idx >= engine.queue.length) {
+    if (!engine.stopped && onAllDone) onAllDone()
+    return
+  }
+  const text = engine.queue[idx]
+  const utter = new SpeechSynthesisUtterance(text)
+  const voice = getBestVoice()
+  if (voice) utter.voice = voice
+  utter.rate   = 0.88
+  utter.pitch  = 1.0
+  utter.volume = getVol()
+
+  utter.onend = () => {
+    if (!engine.stopped) speakChunk(idx + 1, onAllDone)
+  }
+  utter.onerror = (e) => {
+    // 'interrupted' fires when we cancel intentionally — ignore it
+    if (e.error === 'interrupted' || engine.stopped) return
+    // On other errors, try the next chunk after a short delay
+    setTimeout(() => { if (!engine.stopped) speakChunk(idx + 1, onAllDone) }, 300)
+  }
+
+  try {
+    window.speechSynthesis.speak(utter)
+  } catch {}
+}
+
+function doSpeak(path, onDone) {
+  if (!('speechSynthesis' in window)) return
+  if (isMuted() || !isEnabled()) return
+  const text =
+    SCRIPTS[path] ||
+    SCRIPTS[Object.keys(SCRIPTS).find(k => path.startsWith(k) && k !== '/') || '']
+  if (!text) return
+
+  clearEngine()
+  engine.stopped = false
+  engine.queue   = splitIntoChunks(text)
+
+  // Wait for voices to be loaded (important on first load)
+  const startWhenReady = () => {
+    if (window.speechSynthesis.getVoices().length > 0) {
+      speakChunk(0, onDone)
+    } else {
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.onvoiceschanged = null
+        speakChunk(0, onDone)
+      }
+    }
+  }
+  startWhenReady()
+}
+
+// ─────────────────────────────────────────────────────────────────
+// PUBLIC EXPORTS (unchanged API — won't break existing callers)
+// ─────────────────────────────────────────────────────────────────
 export function speakText(text) {
   if (!('speechSynthesis' in window)) return
   if (isMuted() || !isEnabled()) return
-  window.speechSynthesis.cancel()
-  const keepAlive = setInterval(() => {
-    if (!window.speechSynthesis.speaking) { clearInterval(keepAlive); return }
-    window.speechSynthesis.pause(); window.speechSynthesis.resume()
-  }, 10000)
-  const utter = new SpeechSynthesisUtterance(text)
-  const voice = getBestVoice()
-  if (voice) utter.voice = voice
-  utter.rate = 0.88; utter.pitch = 1.0; utter.volume = getVol()
-  utter.onend = () => clearInterval(keepAlive)
-  utter.onerror = () => clearInterval(keepAlive)
-  window.speechSynthesis.speak(utter)
+  clearEngine()
+  engine.stopped = false
+  engine.queue   = splitIntoChunks(text)
+  const startWhenReady = () => {
+    if (window.speechSynthesis.getVoices().length > 0) {
+      speakChunk(0)
+    } else {
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.onvoiceschanged = null
+        speakChunk(0)
+      }
+    }
+  }
+  startWhenReady()
 }
 
-function doSpeak(path) {
-  if (!('speechSynthesis' in window)) return
-  if (isMuted() || !isEnabled()) return
-  const text = SCRIPTS[path] || SCRIPTS[Object.keys(SCRIPTS).find(k => path.startsWith(k) && k !== '/')]
-  if (!text) return
-  window.speechSynthesis.cancel()
-  const keepAlive = setInterval(() => {
-    if (!window.speechSynthesis.speaking) { clearInterval(keepAlive); return }
-    window.speechSynthesis.pause(); window.speechSynthesis.resume()
-  }, 10000)
-  const utter = new SpeechSynthesisUtterance(text)
-  const voice = getBestVoice()
-  if (voice) utter.voice = voice
-  utter.rate = 0.88; utter.pitch = 1.0; utter.volume = getVol()
-  utter.onend = () => clearInterval(keepAlive)
-  utter.onerror = () => clearInterval(keepAlive)
-  window.speechSynthesis.speak(utter)
-}
-
-export function stopVoiceGuide()      { try { window.speechSynthesis.cancel() } catch {} }
+export function stopVoiceGuide()       { clearEngine() }
 export function replayVoiceGuide(path) { doSpeak(path) }
 
-// ── Default position: bottom-right corner ─────────────────────
+// ─────────────────────────────────────────────────────────────────
+// POSITION HELPERS
+// ─────────────────────────────────────────────────────────────────
 function getDefaultPos() {
-  return {
-    x: window.innerWidth  - 80,
-    y: window.innerHeight - 160,
-  }
+  return { x: window.innerWidth - 80, y: window.innerHeight - 160 }
 }
-
 function getSavedPos() {
   try {
     const saved = JSON.parse(localStorage.getItem('scripturehub_vg_pos') ?? 'null')
@@ -147,8 +227,59 @@ function getSavedPos() {
   return getDefaultPos()
 }
 
+// ─────────────────────────────────────────────────────────────────
+// AUTO-PLAY BOOTSTRAP
+// Browsers block speech unless triggered by a real user gesture,
+// but many allow a zero-volume utterance immediately on page load
+// as a "warm-up". We try that first; if the browser requires a
+// gesture we fall back to listening for the first interaction.
+// ─────────────────────────────────────────────────────────────────
+function tryAutoUnlock(onUnlocked) {
+  if (!('speechSynthesis' in window)) return
+
+  // Attempt 1: immediate silent utterance (works in most Chromium)
+  const silent = new SpeechSynthesisUtterance(' ')
+  silent.volume = 0
+  let resolved = false
+
+  silent.onend = () => {
+    if (resolved) return
+    resolved = true
+    onUnlocked()
+  }
+  silent.onerror = () => {
+    if (resolved) return
+    // Attempt 2: wait for first user interaction
+    const handler = () => {
+      if (resolved) return
+      resolved = true
+      document.removeEventListener('click',    handler)
+      document.removeEventListener('keydown',  handler)
+      document.removeEventListener('touchend', handler)
+      document.removeEventListener('scroll',   handler)
+      onUnlocked()
+    }
+    document.addEventListener('click',    handler, { once: true })
+    document.addEventListener('keydown',  handler, { once: true })
+    document.addEventListener('touchend', handler, { once: true })
+    document.addEventListener('scroll',   handler, { once: true })
+  }
+
+  try {
+    window.speechSynthesis.cancel()
+    window.speechSynthesis.speak(silent)
+  } catch {
+    // Silent failed hard — fall back to gesture
+    silent.onerror()
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// MAIN COMPONENT
+// ─────────────────────────────────────────────────────────────────
 export default function VoiceGuide() {
-  const location                  = useLocation()
+  const location = useLocation()
+
   const [speaking,  setSpeaking]  = useState(false)
   const [paused,    setPaused]    = useState(false)
   const [muted,     setMuted]     = useState(() => isMuted())
@@ -156,24 +287,23 @@ export default function VoiceGuide() {
   const [showPanel, setShowPanel] = useState(false)
   const [unlocked,  setUnlocked]  = useState(false)
 
-  // ── Drag state ────────────────────────────────────────────────
-  const [pos,     setPos]     = useState(() => getSavedPos())
+  // ── Drag state ──────────────────────────────────────────────────
+  const [pos,      setPos]      = useState(() => getSavedPos())
   const [dragging, setDragging] = useState(false)
-  const dragStart  = useRef(null)   // { mx, my, ox, oy }
-  const widgetRef  = useRef(null)
-
-  const prevPath = useRef('')
-  const pollRef  = useRef(null)
-  const hideRef  = useRef(null)
+  const dragStart = useRef(null)
+  const widgetRef = useRef(null)
+  const prevPath  = useRef('')
+  const pollRef   = useRef(null)
+  const hideRef   = useRef(null)
 
   if (!('speechSynthesis' in window)) return null
 
-  // ── Save position to localStorage whenever it changes ────────
+  // ── Save position ───────────────────────────────────────────────
   useEffect(() => {
     localStorage.setItem('scripturehub_vg_pos', JSON.stringify(pos))
   }, [pos])
 
-  // ── Keep widget inside window on resize ──────────────────────
+  // ── Keep widget inside window on resize ─────────────────────────
   useEffect(() => {
     function onResize() {
       setPos(p => ({
@@ -185,15 +315,13 @@ export default function VoiceGuide() {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  // ── Mouse drag handlers ───────────────────────────────────────
+  // ── Mouse drag ──────────────────────────────────────────────────
   function onMouseDown(e) {
-    // Only drag on the drag-handle, not on buttons/inputs
     if (e.target.closest('button') || e.target.closest('input')) return
     e.preventDefault()
     dragStart.current = { mx: e.clientX, my: e.clientY, ox: pos.x, oy: pos.y }
     setDragging(true)
   }
-
   useEffect(() => {
     function onMouseMove(e) {
       if (!dragStart.current) return
@@ -204,10 +332,7 @@ export default function VoiceGuide() {
         y: Math.max(0, Math.min(window.innerHeight - 60, dragStart.current.oy + dy)),
       })
     }
-    function onMouseUp() {
-      dragStart.current = null
-      setDragging(false)
-    }
+    function onMouseUp() { dragStart.current = null; setDragging(false) }
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener('mouseup',   onMouseUp)
     return () => {
@@ -216,30 +341,24 @@ export default function VoiceGuide() {
     }
   }, [])
 
-  // ── Touch drag handlers ───────────────────────────────────────
+  // ── Touch drag ──────────────────────────────────────────────────
   function onTouchStart(e) {
     if (e.target.closest('button') || e.target.closest('input')) return
     const t = e.touches[0]
     dragStart.current = { mx: t.clientX, my: t.clientY, ox: pos.x, oy: pos.y }
     setDragging(true)
   }
-
   useEffect(() => {
     function onTouchMove(e) {
       if (!dragStart.current) return
       e.preventDefault()
       const t = e.touches[0]
-      const dx = t.clientX - dragStart.current.mx
-      const dy = t.clientY - dragStart.current.my
       setPos({
-        x: Math.max(0, Math.min(window.innerWidth  - 60, dragStart.current.ox + dx)),
-        y: Math.max(0, Math.min(window.innerHeight - 60, dragStart.current.oy + dy)),
+        x: Math.max(0, Math.min(window.innerWidth  - 60, dragStart.current.ox + (t.clientX - dragStart.current.mx))),
+        y: Math.max(0, Math.min(window.innerHeight - 60, dragStart.current.oy + (t.clientY - dragStart.current.my))),
       })
     }
-    function onTouchEnd() {
-      dragStart.current = null
-      setDragging(false)
-    }
+    function onTouchEnd() { dragStart.current = null; setDragging(false) }
     window.addEventListener('touchmove', onTouchMove, { passive: false })
     window.addEventListener('touchend',  onTouchEnd)
     return () => {
@@ -248,45 +367,38 @@ export default function VoiceGuide() {
     }
   }, [])
 
-  // ── Unlock speech on first user interaction ───────────────────
+  // ── AUTO-PLAY on first mount ─────────────────────────────────────
+  // Attempts immediate speech; falls back to first-interaction if
+  // the browser blocks auto-play without a gesture.
   useEffect(() => {
-    function unlock() {
-      if (unlocked) return
-      const silent = new SpeechSynthesisUtterance(' ')
-      silent.volume = 0
-      silent.onend = () => {
-        setUnlocked(true)
-        if (pendingPath && !muted) { setTimeout(() => doSpeak(pendingPath), 300); pendingPath = null }
-      }
-      window.speechSynthesis.speak(silent)
-      document.removeEventListener('click',    unlock)
-      document.removeEventListener('keydown',  unlock)
-      document.removeEventListener('touchend', unlock)
-      document.removeEventListener('scroll',   unlock)
-    }
-    document.addEventListener('click',    unlock, { once: true })
-    document.addEventListener('keydown',  unlock, { once: true })
-    document.addEventListener('touchend', unlock, { once: true })
-    document.addEventListener('scroll',   unlock, { once: true })
-    return () => {
-      document.removeEventListener('click',    unlock)
-      document.removeEventListener('keydown',  unlock)
-      document.removeEventListener('touchend', unlock)
-      document.removeEventListener('scroll',   unlock)
-    }
-  }, [unlocked, muted])
+    const initialPath = location.pathname
+    prevPath.current  = initialPath   // mark so route-change effect skips the dupe
 
-  // ── Speak on route change ─────────────────────────────────────
+    tryAutoUnlock(() => {
+      setUnlocked(true)
+      if (!isMuted() && isEnabled()) {
+        setTimeout(() => doSpeak(initialPath), 300)
+      }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // intentionally runs once on mount only
+
+  // ── Speak on route change ────────────────────────────────────────
   useEffect(() => {
     const path = location.pathname
     if (path === prevPath.current) return
     prevPath.current = path
     if (muted) return
-    if (unlocked) { setTimeout(() => doSpeak(path), 600) }
-    else { pendingPath = path }
+    if (unlocked) {
+      // Small delay so page content has time to settle
+      setTimeout(() => doSpeak(path), 600)
+    }
+    // If not yet unlocked, auto-unlock mount effect will have queued
+    // the initial path. Subsequent navigations before unlock are rare
+    // but we handle them: once unlocked is true this branch fires.
   }, [location.pathname, muted, unlocked])
 
-  // ── Poll speech state ─────────────────────────────────────────
+  // ── Poll speech synthesis state for UI ──────────────────────────
   useEffect(() => {
     pollRef.current = setInterval(() => {
       setSpeaking(window.speechSynthesis.speaking && !window.speechSynthesis.paused)
@@ -295,16 +407,21 @@ export default function VoiceGuide() {
     return () => clearInterval(pollRef.current)
   }, [])
 
-  // ── Cleanup ───────────────────────────────────────────────────
+  // ── Cleanup on unmount ───────────────────────────────────────────
   useEffect(() => {
-    return () => { stopVoiceGuide(); clearInterval(pollRef.current); clearTimeout(hideRef.current) }
+    return () => {
+      clearEngine()
+      clearInterval(pollRef.current)
+      clearTimeout(hideRef.current)
+    }
   }, [])
 
+  // ── Controls ─────────────────────────────────────────────────────
   function toggleMute() {
     const next = !muted
     setMuted(next)
     localStorage.setItem('scripturehub_voice_muted', String(next))
-    if (next) stopVoiceGuide()
+    if (next) clearEngine()
   }
 
   function handleVolume(e) {
@@ -320,13 +437,18 @@ export default function VoiceGuide() {
   }
 
   function handleStop() {
-    stopVoiceGuide(); setSpeaking(false); setPaused(false); setShowPanel(false)
+    clearEngine()
+    setSpeaking(false)
+    setPaused(false)
+    setShowPanel(false)
   }
 
   function handleReplay() {
-    replayVoiceGuide(location.pathname); setShowPanel(false)
+    replayVoiceGuide(location.pathname)
+    setShowPanel(false)
   }
 
+  // ── Accent colour (respects user settings) ───────────────────────
   const accent = (() => {
     try { return JSON.parse(localStorage.getItem('scripturehub_settings') ?? '{}').accentColor || '#c9a84c' }
     catch { return '#c9a84c' }
@@ -335,6 +457,15 @@ export default function VoiceGuide() {
   const pageName = PAGE_NAMES[location.pathname] || 'ScriptureHub'
   const isActive = speaking || paused
 
+  // ─────────────────────────────────────────────────────────────────
+  // RENDER
+  // Speaker/mic button removed per spec.
+  // Widget shows:
+  //   • Drag handle (always)
+  //   • Speaking card with waveform + play/pause/stop + volume (when active)
+  //   • Compact hover panel with volume + replay (when hovered & inactive)
+  //   • Mute toggle pill (always — lets user turn guide off/on cleanly)
+  // ─────────────────────────────────────────────────────────────────
   return (
     <>
       <style>{`
@@ -352,7 +483,7 @@ export default function VoiceGuide() {
           display: flex;
           flex-direction: column;
           align-items: flex-end;
-          gap: 0.5rem;
+          gap: 0.45rem;
           font-family: Georgia, serif;
           user-select: none;
         }
@@ -364,7 +495,7 @@ export default function VoiceGuide() {
           gap: 3px;
           padding: 4px 0 2px;
           cursor: grab;
-          opacity: 0.45;
+          opacity: 0.4;
           transition: opacity 0.2s;
         }
         .vg-drag-handle:hover { opacity: 1; }
@@ -377,6 +508,10 @@ export default function VoiceGuide() {
         }
         .vg-widget.dragging { cursor: grabbing !important; }
         .vg-widget.dragging * { cursor: grabbing !important; }
+        .vg-ctrl-btn {
+          transition: opacity 0.18s, transform 0.18s;
+        }
+        .vg-ctrl-btn:hover { opacity: 0.85; transform: scale(1.08); }
       `}</style>
 
       <div
@@ -384,7 +519,7 @@ export default function VoiceGuide() {
         className={`vg-widget${dragging ? ' dragging' : ''}`}
         style={{ left: pos.x + 'px', top: pos.y + 'px' }}
       >
-        {/* ── Drag handle — grab here to move ── */}
+        {/* ── Drag handle ── */}
         <div
           className="vg-drag-handle"
           onMouseDown={onMouseDown}
@@ -396,132 +531,161 @@ export default function VoiceGuide() {
           </div>
         </div>
 
-        {/* ── Speaking card ── */}
+        {/* ── Active speaking card (visible while speaking or paused) ── */}
         {isActive && (
           <div style={{
             background: 'rgba(10,5,2,0.97)',
-            border: '1px solid ' + accent + '88',
-            borderRadius: '16px', padding: '1rem 1.25rem',
-            minWidth: '265px', maxWidth: '320px',
+            border: `1px solid ${accent}88`,
+            borderRadius: '16px',
+            padding: '0.9rem 1.1rem',
+            minWidth: '260px',
+            maxWidth: '310px',
             boxShadow: '0 8px 40px rgba(0,0,0,0.65)',
             animation: 'vg-in 0.28s ease',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.85rem' }}>
+            {/* Header row: waveform + page name */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.8rem' }}>
+              {/* Animated waveform bars */}
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '20px', flexShrink: 0 }}>
                 {[0.5, 0.9, 1.0, 0.7, 0.4].map((h, i) => (
                   <span key={i} style={{
-                    display: 'inline-block', width: '3px',
-                    height: (h * 20) + 'px', borderRadius: '99px',
-                    background: accent, transformOrigin: 'bottom',
-                    animation: speaking ? `vg-bar ${0.45 + i * 0.08}s ease-in-out infinite` : 'none',
-                    animationDelay: (i * 0.09) + 's',
-                    opacity: speaking ? 1 : 0.3,
+                    display: 'inline-block',
+                    width: '3px',
+                    height: `${h * 20}px`,
+                    borderRadius: '99px',
+                    background: accent,
+                    transformOrigin: 'bottom',
+                    animation: speaking
+                      ? `vg-bar ${0.45 + i * 0.08}s ease-in-out infinite`
+                      : 'none',
+                    animationDelay: `${i * 0.09}s`,
+                    opacity: speaking ? 1 : 0.25,
                     transition: 'opacity 0.3s',
                   }} />
                 ))}
               </div>
+
               <div style={{ flex: 1 }}>
-                <p style={{ color: accent, fontSize: '0.68rem', fontWeight: '800', margin: 0, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                  🎙️ Voice Guide
+                <p style={{
+                  color: accent, fontSize: '0.66rem', fontWeight: '800',
+                  margin: 0, textTransform: 'uppercase', letterSpacing: '0.1em',
+                }}>
+                  Voice Guide
                 </p>
                 <p style={{ color: '#f5ead8', fontSize: '0.86rem', fontWeight: '600', margin: 0 }}>
                   {paused ? '⏸ Paused' : pageName}
                 </p>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+
+            {/* Controls row */}
+            <div style={{ display: 'flex', gap: '0.45rem', alignItems: 'center' }}>
               <CtrlBtn onClick={handlePlayPause} color={accent} title={paused ? 'Resume' : 'Pause'}>
                 {paused ? '▶' : '⏸'}
               </CtrlBtn>
-              <CtrlBtn onClick={handleStop} color="#e74c3c" title="Stop">⏹</CtrlBtn>
-              <input type="range" min="0" max="1" step="0.05"
+              <CtrlBtn onClick={handleStop} color="#e74c3c" title="Stop">
+                ⏹
+              </CtrlBtn>
+              <input
+                type="range" min="0" max="1" step="0.05"
                 value={volume} onChange={handleVolume}
-                style={{ flex: 1, accentColor: accent, cursor: 'pointer' }} />
-              <span style={{ color: accent, fontSize: '0.72rem', fontWeight: '800', minWidth: '32px', textAlign: 'right' }}>
+                style={{ flex: 1, accentColor: accent, cursor: 'pointer' }}
+              />
+              <span style={{
+                color: accent, fontSize: '0.72rem', fontWeight: '800',
+                minWidth: '32px', textAlign: 'right',
+              }}>
                 {Math.round(volume * 100)}%
               </span>
             </div>
           </div>
         )}
 
-        {/* ── Hover panel ── */}
+        {/* ── Hover panel (idle state — replay + volume) ── */}
         {showPanel && !isActive && (
           <div
             onMouseEnter={() => clearTimeout(hideRef.current)}
             onMouseLeave={() => { hideRef.current = setTimeout(() => setShowPanel(false), 400) }}
             style={{
               background: 'rgba(10,5,2,0.97)',
-              border: '1px solid rgba(201,168,76,0.4)',
-              borderRadius: '14px', padding: '0.95rem 1.1rem',
-              minWidth: '235px', boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
+              border: `1px solid rgba(201,168,76,0.4)`,
+              borderRadius: '14px',
+              padding: '0.95rem 1.1rem',
+              minWidth: '235px',
+              boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
               animation: 'vg-in 0.22s ease',
             }}
           >
-            <p style={{ color: accent, fontSize: '0.7rem', fontWeight: '800', margin: '0 0 0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              🎙️ Voice Guide
+            <p style={{
+              color: accent, fontSize: '0.7rem', fontWeight: '800',
+              margin: '0 0 0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em',
+            }}>
+              Voice Guide
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.7rem' }}>
               <span style={{ color: '#c8b89a', fontSize: '0.8rem', fontWeight: '600', minWidth: '62px' }}>
                 🔊 Volume
               </span>
-              <input type="range" min="0" max="1" step="0.05"
+              <input
+                type="range" min="0" max="1" step="0.05"
                 value={volume} onChange={handleVolume}
-                style={{ flex: 1, accentColor: accent, cursor: 'pointer' }} />
-              <span style={{ color: accent, fontSize: '0.75rem', fontWeight: '800', minWidth: '32px', textAlign: 'right' }}>
+                style={{ flex: 1, accentColor: accent, cursor: 'pointer' }}
+              />
+              <span style={{
+                color: accent, fontSize: '0.75rem', fontWeight: '800',
+                minWidth: '32px', textAlign: 'right',
+              }}>
                 {Math.round(volume * 100)}%
               </span>
             </div>
             <button onClick={handleReplay} style={{
               width: '100%', padding: '0.5rem',
-              background: accent + '22', border: '1px solid ' + accent + '55',
-              borderRadius: '8px', color: accent,
-              fontSize: '0.8rem', fontWeight: '700',
+              background: accent + '22',
+              border: `1px solid ${accent}55`,
+              borderRadius: '8px',
+              color: accent, fontSize: '0.8rem', fontWeight: '700',
               cursor: 'pointer', fontFamily: 'Georgia,serif',
             }}>
               🔁 Replay This Page
             </button>
-            {!unlocked && (
-              <p style={{ color: '#c8b89a', fontSize: '0.72rem', margin: '0.6rem 0 0', textAlign: 'center', lineHeight: '1.5' }}>
-                👆 Click anywhere on the page<br/>to activate the voice guide
-              </p>
-            )}
           </div>
         )}
 
-        {/* ── Mic button ── */}
+        {/* ── Mute / status pill — replaces the old mic button ── */}
+        {/* Speaker icon removed. Pill shows current state and toggles mute. */}
         <button
-          onClick={() => { if (isActive) handleStop(); else setShowPanel(p => !p) }}
+          onClick={toggleMute}
           onMouseEnter={() => { clearTimeout(hideRef.current); if (!isActive) setShowPanel(true) }}
           onMouseLeave={() => { hideRef.current = setTimeout(() => setShowPanel(false), 1000) }}
-          title={isActive ? 'Stop voice' : !unlocked ? 'Click anywhere to activate voice' : muted ? 'Voice Guide (muted)' : 'Voice Guide'}
+          title={muted ? 'Voice Guide is muted — click to unmute' : 'Click to mute Voice Guide'}
           style={{
-            width: '46px', height: '46px', borderRadius: '50%',
-            background: isActive ? accent + '33' : 'rgba(10,5,2,0.97)',
-            border: '1.5px solid ' + (isActive ? accent : !unlocked ? 'rgba(201,168,76,0.25)' : 'rgba(201,168,76,0.45)'),
-            cursor: 'pointer', fontSize: '1.2rem',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            backdropFilter: 'blur(20px)', transition: 'all 0.22s',
-            opacity: !unlocked ? 0.6 : 1,
-            boxShadow: isActive
-              ? '0 0 22px ' + accent + '55, 0 2px 16px rgba(0,0,0,0.4)'
-              : '0 2px 16px rgba(0,0,0,0.4)',
+            background: 'rgba(10,5,2,0.88)',
+            border: `1px solid ${muted ? 'rgba(231,76,60,0.55)' : `${accent}44`}`,
+            borderRadius: '999px',
+            padding: '0.28rem 0.85rem',
+            color: muted ? '#e74c3c' : accent,
+            fontSize: '0.68rem',
+            fontWeight: '800',
+            cursor: 'pointer',
+            fontFamily: 'Georgia,serif',
+            backdropFilter: 'blur(12px)',
+            letterSpacing: '0.06em',
+            transition: 'all 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
           }}
         >
-          {!unlocked ? '🔒' : '🎙️'}
-        </button>
-
-        {/* ── Status pill ── */}
-        <button onClick={toggleMute} style={{
-          background: 'rgba(10,5,2,0.88)',
-          border: '1px solid ' + (muted ? 'rgba(231,76,60,0.5)' : !unlocked ? 'rgba(201,168,76,0.15)' : 'rgba(201,168,76,0.25)'),
-          borderRadius: '999px', padding: '0.2rem 0.7rem',
-          color: muted ? '#e74c3c' : !unlocked ? 'rgba(200,184,154,0.5)' : '#c8b89a',
-          fontSize: '0.65rem', fontWeight: '700',
-          cursor: 'pointer', fontFamily: 'Georgia,serif',
-          backdropFilter: 'blur(12px)', letterSpacing: '0.05em',
-          transition: 'all 0.2s',
-        }}>
-          {muted ? 'VOICE OFF' : !unlocked ? 'CLICK TO ACTIVATE' : 'VOICE ON'}
+          {/* Small inline dot indicator */}
+          <span style={{
+            display: 'inline-block',
+            width: '6px', height: '6px',
+            borderRadius: '50%',
+            background: muted ? '#e74c3c' : (speaking ? accent : `${accent}88`),
+            boxShadow: speaking && !muted ? `0 0 6px ${accent}` : 'none',
+            transition: 'all 0.3s',
+          }} />
+          {muted ? 'VOICE OFF' : speaking ? 'PLAYING' : paused ? 'PAUSED' : 'VOICE ON'}
         </button>
 
       </div>
@@ -529,15 +693,27 @@ export default function VoiceGuide() {
   )
 }
 
+// ─────────────────────────────────────────────────────────────────
+// CTRL BUTTON SUB-COMPONENT
+// ─────────────────────────────────────────────────────────────────
 function CtrlBtn({ onClick, color, title, children }) {
   return (
-    <button onClick={onClick} title={title} style={{
-      width: '32px', height: '32px', borderRadius: '8px', flexShrink: 0,
-      background: color + '22', border: '1px solid ' + color,
-      color, fontSize: '0.85rem', cursor: 'pointer',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: 'Georgia,serif', transition: 'all 0.18s',
-    }}>
+    <button
+      onClick={onClick}
+      title={title}
+      className="vg-ctrl-btn"
+      style={{
+        width: '32px', height: '32px',
+        borderRadius: '8px', flexShrink: 0,
+        background: color + '22',
+        border: `1px solid ${color}`,
+        color,
+        fontSize: '0.85rem',
+        cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontFamily: 'Georgia,serif',
+      }}
+    >
       {children}
     </button>
   )

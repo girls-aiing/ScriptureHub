@@ -8,7 +8,6 @@ import Navbar           from './components/Navbar.jsx'
 import Footer           from './components/Footer.jsx'
 import FloatingChat     from './components/FloatingChat.jsx'
 import DarkModeToggle   from './components/DarkModeToggle.jsx'
-import AudioController  from './components/AudioController.jsx'
 import VoiceGuide       from './components/VoiceGuide.jsx'
 
 import HomePage            from './pages/HomePage.jsx'
@@ -55,7 +54,6 @@ function AppShell() {
       </main>
       <ConditionalFooter />
       <ConditionalChat />
-      <AudioController />
       <VoiceGuide />
     </div>
   )
