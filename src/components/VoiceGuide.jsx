@@ -6,10 +6,11 @@ import { useLocation } from 'react-router-dom'
 // ─────────────────────────────────────────────────────────────────
 const SCRIPTS = {
   '/':             `Welcome to ScriptureHub — your sacred digital companion. Here on the home page, you will find your verse of the day, quick access to the Bible reader, and your personal growth dashboard. May your time here draw you closer to the Word of God.`,
-  '/bible':        `Welcome to the Word. Here in the Bible Reader, you can explore different translations such as the King James Version, the NIV, and many more. Use the book and chapter selectors to navigate scripture. You can highlight your favourite verses and save personal notes in your journal.`,
+  '/bible':        `Welcome to the Word. Here in the Bible Reader, you can explore different translations such as the King James Version, the World English Bible, and many more. Use the book and chapter selectors to navigate scripture. You can highlight your favourite verses and save personal notes in your journal.`,
+  '/bible/hymns':  `Welcome to the Scripture Hub Hymn Centre — a treasury of sacred song spanning centuries of worship. You have access to two magnificent collections. The first is Hymns Ancient and Modern, containing eight hundred and forty seven selections including traditional hymns, short songs, and chants. The second is Sacred Songs and Solos, the complete twelve hundred piece edition featuring beloved gospel classics and revival solos. Use the collection switcher at the top to choose your preferred book. Then use the search bar to find any hymn by its number, title, author, or even a line from the lyrics. You can also filter by category — such as Grace and Salvation, Praise and Worship, or Christmas — and sort by hymn number, title, or author. When you open a hymn, click the Singing Mode button for a beautiful full screen view with large text, perfect for singing from your phone or tablet during worship. You may also press the Listen button to hear any hymn read aloud. May every song lift your heart to heaven.`,
+  '/bible/hymn-detail': `You are now viewing the full hymn. Each section is displayed clearly with its label — verse one, chorus, verse two, and so on. Press the Listen All button to hear the entire hymn read aloud, or press the small speaker button beside any individual section to hear just that part. For the best worship experience, press the Singing Mode button at the top. This opens a beautiful full screen view with large text, navigation dots to move between sections, and a Listen button for each verse. It is designed to be easy to read from any device during personal or group worship. Enjoy singing to the Lord.`,
   '/quizzes':      `Welcome to the Knowledge Hub. Here you can test and grow your understanding of scripture through carefully crafted Bible quizzes. Choose your difficulty level — from beginner to scholar — and challenge yourself to go deeper into the Word.`,
-  '/ai':           `Welcome to your AI Scripture Consultant. This is your personal Bible study assistant, available any time. You can ask questions about any verse, request explanations of biblical events, explore theological topics, or simply ask for encouragement.`,
-  '/dashboard':    `Welcome to your Growth Dashboard. This is your personal spiritual progress centre. Here you can track your reading streak, review your quiz scores, monitor your study goals, and celebrate the milestones you have reached on your faith journey.`,
+  '/ai':           `Welcome to your AI Scripture Advisor. This is your personal Bible study assistant, available any time. You can ask questions about any verse, request explanations of biblical events, explore theological topics, or simply ask for encouragement.`,
   '/did-you-know': `Welcome to Did You Know — a treasury of biblical secrets. Each card here reveals a fascinating fact, a hidden connection, or a surprising truth from scripture that most people have never discovered. Click any card to reveal its secret.`,
   '/games':        `Welcome to the Spiritual Arcade — where faith meets fun! Here you will find sixteen interactive games designed to strengthen your knowledge of scripture. Choose any game to begin. Every game is rooted in the Word of God. May you grow in wisdom as you play!`,
   '/community':    `Welcome to the ScriptureHub Community. Here you can carve your own stone of remembrance by sharing a verse or testimony that has touched your heart. You can also earn treasure chest badges, walk the Prophet's Path, and discover hidden Easter eggs filled with ancient wisdom.`,
@@ -32,12 +33,23 @@ const SCRIPTS = {
   '/games/swordDrill':  `Welcome to Sword Drill! I will show you a Bible verse on screen. Your challenge is to type the correct book, chapter, and verse reference as fast as you can before the thirty second timer runs out. The Word of God is your sword — draw it quickly and accurately!`,
 }
 
+// ── Virtual sub-page scripts fired via custom events ──────────────
+// BibleReaderPage dispatches  window.dispatchEvent(new CustomEvent('vg:subpage', { detail: 'hymns' }))
+// when the user navigates into the hymn centre, hymn detail, or singing mode.
+const SUBPAGE_SCRIPTS = {
+  'hymns':        SCRIPTS['/bible/hymns'],
+  'hymn-detail':  SCRIPTS['/bible/hymn-detail'],
+  'singing-mode': `You are now in Singing Mode — a distraction free worship experience. The lyrics are displayed in large, clear text so you can sing along easily from any device. Use the Previous and Next buttons, or tap the dots at the bottom, to move between sections. Press the Listen button to hear the current section read aloud. When you are finished, press Exit to return to the hymn. Sing with all your heart to the Lord!`,
+  'books':        `You are back in the Bible Reader. Select a testament, then choose a book and chapter to begin reading. You can also open the Hymn Centre at any time using the Hymn Centre button in the tab bar.`,
+}
+
 const PAGE_NAMES = {
   '/':             'Home',
   '/bible':        'Bible Reader',
+  '/bible/hymns':  'Hymn Centre',
+  '/bible/hymn-detail': 'Hymn Detail',
   '/quizzes':      'Knowledge Hub',
   '/ai':           'AI Consultant',
-  '/dashboard':    'Growth Dashboard',
   '/did-you-know': 'Did You Know',
   '/games':        'Bible Games',
   '/community':    'Community',
@@ -58,6 +70,13 @@ const PAGE_NAMES = {
   '/games/connections': '🔗 Daily Connections',
   '/games/map':         '🗺️ Biblical Map Quest',
   '/games/swordDrill':  '⚔️ Sword Drill',
+}
+
+const SUBPAGE_NAMES = {
+  'hymns':        '🎵 Hymn Centre',
+  'hymn-detail':  '🎵 Hymn Detail',
+  'singing-mode': '🎤 Singing Mode',
+  'books':        '📖 Bible Reader',
 }
 
 const PREFERRED_VOICES = [
@@ -98,12 +117,8 @@ function getBestVoice() {
 
 // ─────────────────────────────────────────────────────────────────
 // CORE SPEAK ENGINE
-// Robust keep-alive: Chrome silently kills long utterances after
-// ~15 s. We split the script into sentence-sized chunks and queue
-// them so each chunk starts fresh — no pause/resume hacks needed.
 // ─────────────────────────────────────────────────────────────────
 function splitIntoChunks(text, maxChars = 180) {
-  // Split on sentence boundaries first, then re-join into chunks
   const sentences = text.match(/[^.!?]+[.!?]*/g) || [text]
   const chunks = []
   let current = ''
@@ -119,16 +134,15 @@ function splitIntoChunks(text, maxChars = 180) {
   return chunks
 }
 
-// Global ref so speakText / stopVoiceGuide can share queue state
 const engine = {
-  queue: [],
+  queue:     [],
   keepAlive: null,
-  stopped: false,
+  stopped:   false,
 }
 
 function clearEngine() {
   engine.stopped = true
-  engine.queue = []
+  engine.queue   = []
   clearInterval(engine.keepAlive)
   engine.keepAlive = null
   try { window.speechSynthesis.cancel() } catch {}
@@ -139,7 +153,7 @@ function speakChunk(idx, onAllDone) {
     if (!engine.stopped && onAllDone) onAllDone()
     return
   }
-  const text = engine.queue[idx]
+  const text  = engine.queue[idx]
   const utter = new SpeechSynthesisUtterance(text)
   const voice = getBestVoice()
   if (voice) utter.voice = voice
@@ -151,30 +165,21 @@ function speakChunk(idx, onAllDone) {
     if (!engine.stopped) speakChunk(idx + 1, onAllDone)
   }
   utter.onerror = (e) => {
-    // 'interrupted' fires when we cancel intentionally — ignore it
     if (e.error === 'interrupted' || engine.stopped) return
-    // On other errors, try the next chunk after a short delay
     setTimeout(() => { if (!engine.stopped) speakChunk(idx + 1, onAllDone) }, 300)
   }
-
-  try {
-    window.speechSynthesis.speak(utter)
-  } catch {}
+  try { window.speechSynthesis.speak(utter) } catch {}
 }
 
-function doSpeak(path, onDone) {
+function doSpeak(text, onDone) {
   if (!('speechSynthesis' in window)) return
   if (isMuted() || !isEnabled()) return
-  const text =
-    SCRIPTS[path] ||
-    SCRIPTS[Object.keys(SCRIPTS).find(k => path.startsWith(k) && k !== '/') || '']
   if (!text) return
 
   clearEngine()
   engine.stopped = false
   engine.queue   = splitIntoChunks(text)
 
-  // Wait for voices to be loaded (important on first load)
   const startWhenReady = () => {
     if (window.speechSynthesis.getVoices().length > 0) {
       speakChunk(0, onDone)
@@ -188,30 +193,31 @@ function doSpeak(path, onDone) {
   startWhenReady()
 }
 
-// ─────────────────────────────────────────────────────────────────
-// PUBLIC EXPORTS (unchanged API — won't break existing callers)
-// ─────────────────────────────────────────────────────────────────
-export function speakText(text) {
-  if (!('speechSynthesis' in window)) return
-  if (isMuted() || !isEnabled()) return
-  clearEngine()
-  engine.stopped = false
-  engine.queue   = splitIntoChunks(text)
-  const startWhenReady = () => {
-    if (window.speechSynthesis.getVoices().length > 0) {
-      speakChunk(0)
-    } else {
-      window.speechSynthesis.onvoiceschanged = () => {
-        window.speechSynthesis.onvoiceschanged = null
-        speakChunk(0)
-      }
-    }
-  }
-  startWhenReady()
+function doSpeakPath(path, onDone) {
+  const text =
+    SCRIPTS[path] ||
+    SCRIPTS[Object.keys(SCRIPTS).find(k => path.startsWith(k) && k !== '/') || '']
+  doSpeak(text, onDone)
 }
 
+// ─────────────────────────────────────────────────────────────────
+// PUBLIC EXPORTS
+// ─────────────────────────────────────────────────────────────────
+export function speakText(text)        { doSpeak(text) }
 export function stopVoiceGuide()       { clearEngine() }
-export function replayVoiceGuide(path) { doSpeak(path) }
+export function replayVoiceGuide(path) { doSpeakPath(path) }
+
+// ── NEW: called by BibleReaderPage when view changes ──────────────
+// Usage in BibleReaderPage:
+//   import { announceHymnView } from '../components/VoiceGuide'
+//   announceHymnView('hymns')          // entering hymn list
+//   announceHymnView('hymn-detail')    // opening a hymn
+//   announceHymnView('singing-mode')   // entering singing mode
+//   announceHymnView('books')          // returning to Bible books
+export function announceHymnView(subpage) {
+  const text = SUBPAGE_SCRIPTS[subpage]
+  if (text) doSpeak(text)
+}
 
 // ─────────────────────────────────────────────────────────────────
 // POSITION HELPERS
@@ -229,18 +235,12 @@ function getSavedPos() {
 
 // ─────────────────────────────────────────────────────────────────
 // AUTO-PLAY BOOTSTRAP
-// Browsers block speech unless triggered by a real user gesture,
-// but many allow a zero-volume utterance immediately on page load
-// as a "warm-up". We try that first; if the browser requires a
-// gesture we fall back to listening for the first interaction.
 // ─────────────────────────────────────────────────────────────────
 function tryAutoUnlock(onUnlocked) {
   if (!('speechSynthesis' in window)) return
-
-  // Attempt 1: immediate silent utterance (works in most Chromium)
   const silent = new SpeechSynthesisUtterance(' ')
   silent.volume = 0
-  let resolved = false
+  let resolved  = false
 
   silent.onend = () => {
     if (resolved) return
@@ -249,7 +249,6 @@ function tryAutoUnlock(onUnlocked) {
   }
   silent.onerror = () => {
     if (resolved) return
-    // Attempt 2: wait for first user interaction
     const handler = () => {
       if (resolved) return
       resolved = true
@@ -264,14 +263,10 @@ function tryAutoUnlock(onUnlocked) {
     document.addEventListener('touchend', handler, { once: true })
     document.addEventListener('scroll',   handler, { once: true })
   }
-
   try {
     window.speechSynthesis.cancel()
     window.speechSynthesis.speak(silent)
-  } catch {
-    // Silent failed hard — fall back to gesture
-    silent.onerror()
-  }
+  } catch { silent.onerror() }
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -280,21 +275,23 @@ function tryAutoUnlock(onUnlocked) {
 export default function VoiceGuide() {
   const location = useLocation()
 
-  const [speaking,  setSpeaking]  = useState(false)
-  const [paused,    setPaused]    = useState(false)
-  const [muted,     setMuted]     = useState(() => isMuted())
-  const [volume,    setVolume]    = useState(() => getVol())
-  const [showPanel, setShowPanel] = useState(false)
-  const [unlocked,  setUnlocked]  = useState(false)
+  const [speaking,     setSpeaking]     = useState(false)
+  const [paused,       setPaused]       = useState(false)
+  const [muted,        setMuted]        = useState(() => isMuted())
+  const [volume,       setVolume]       = useState(() => getVol())
+  const [showPanel,    setShowPanel]    = useState(false)
+  const [unlocked,     setUnlocked]     = useState(false)
+  const [currentLabel, setCurrentLabel] = useState('')   // shown in the card
 
   // ── Drag state ──────────────────────────────────────────────────
   const [pos,      setPos]      = useState(() => getSavedPos())
   const [dragging, setDragging] = useState(false)
-  const dragStart = useRef(null)
-  const widgetRef = useRef(null)
-  const prevPath  = useRef('')
-  const pollRef   = useRef(null)
-  const hideRef   = useRef(null)
+  const dragStart  = useRef(null)
+  const widgetRef  = useRef(null)
+  const prevPath   = useRef('')
+  const pollRef    = useRef(null)
+  const hideRef    = useRef(null)
+  const replayText = useRef('')   // stores last spoken text for replay
 
   if (!('speechSynthesis' in window)) return null
 
@@ -314,6 +311,26 @@ export default function VoiceGuide() {
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
+
+  // ── Listen for hymn sub-page events from BibleReaderPage ─────────
+  // BibleReaderPage fires:
+  //   window.dispatchEvent(new CustomEvent('vg:subpage', { detail: 'hymns' }))
+  useEffect(() => {
+    function onSubpage(e) {
+      const subpage = e.detail
+      const text    = SUBPAGE_SCRIPTS[subpage]
+      const label   = SUBPAGE_NAMES[subpage] || 'Bible Reader'
+      if (!text) return
+      if (isMuted() || !isEnabled()) return
+      replayText.current = text
+      setCurrentLabel(label)
+      if (unlocked) {
+        setTimeout(() => doSpeak(text), 400)
+      }
+    }
+    window.addEventListener('vg:subpage', onSubpage)
+    return () => window.removeEventListener('vg:subpage', onSubpage)
+  }, [unlocked])
 
   // ── Mouse drag ──────────────────────────────────────────────────
   function onMouseDown(e) {
@@ -368,20 +385,24 @@ export default function VoiceGuide() {
   }, [])
 
   // ── AUTO-PLAY on first mount ─────────────────────────────────────
-  // Attempts immediate speech; falls back to first-interaction if
-  // the browser blocks auto-play without a gesture.
   useEffect(() => {
     const initialPath = location.pathname
-    prevPath.current  = initialPath   // mark so route-change effect skips the dupe
+    prevPath.current  = initialPath
 
     tryAutoUnlock(() => {
       setUnlocked(true)
       if (!isMuted() && isEnabled()) {
-        setTimeout(() => doSpeak(initialPath), 300)
+        const text = SCRIPTS[initialPath] ||
+          SCRIPTS[Object.keys(SCRIPTS).find(k => initialPath.startsWith(k) && k !== '/') || '']
+        if (text) {
+          replayText.current = text
+          setCurrentLabel(PAGE_NAMES[initialPath] || 'ScriptureHub')
+          setTimeout(() => doSpeak(text), 300)
+        }
       }
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // intentionally runs once on mount only
+  }, [])
 
   // ── Speak on route change ────────────────────────────────────────
   useEffect(() => {
@@ -389,13 +410,14 @@ export default function VoiceGuide() {
     if (path === prevPath.current) return
     prevPath.current = path
     if (muted) return
+    const text = SCRIPTS[path] ||
+      SCRIPTS[Object.keys(SCRIPTS).find(k => path.startsWith(k) && k !== '/') || '']
+    if (!text) return
+    replayText.current = text
+    setCurrentLabel(PAGE_NAMES[path] || 'ScriptureHub')
     if (unlocked) {
-      // Small delay so page content has time to settle
-      setTimeout(() => doSpeak(path), 600)
+      setTimeout(() => doSpeak(text), 600)
     }
-    // If not yet unlocked, auto-unlock mount effect will have queued
-    // the initial path. Subsequent navigations before unlock are rare
-    // but we handle them: once unlocked is true this branch fires.
   }, [location.pathname, muted, unlocked])
 
   // ── Poll speech synthesis state for UI ──────────────────────────
@@ -433,7 +455,10 @@ export default function VoiceGuide() {
   function handlePlayPause() {
     if (paused)        { window.speechSynthesis.resume(); setPaused(false) }
     else if (speaking) { window.speechSynthesis.pause();  setPaused(true)  }
-    else               { replayVoiceGuide(location.pathname) }
+    else               {
+      if (replayText.current) doSpeak(replayText.current)
+      else doSpeakPath(location.pathname)
+    }
   }
 
   function handleStop() {
@@ -444,27 +469,22 @@ export default function VoiceGuide() {
   }
 
   function handleReplay() {
-    replayVoiceGuide(location.pathname)
+    if (replayText.current) doSpeak(replayText.current)
+    else doSpeakPath(location.pathname)
     setShowPanel(false)
   }
 
-  // ── Accent colour (respects user settings) ───────────────────────
+  // ── Accent colour ────────────────────────────────────────────────
   const accent = (() => {
     try { return JSON.parse(localStorage.getItem('scripturehub_settings') ?? '{}').accentColor || '#c9a84c' }
     catch { return '#c9a84c' }
   })()
 
-  const pageName = PAGE_NAMES[location.pathname] || 'ScriptureHub'
+  const pageName = currentLabel || PAGE_NAMES[location.pathname] || 'ScriptureHub'
   const isActive = speaking || paused
 
   // ─────────────────────────────────────────────────────────────────
   // RENDER
-  // Speaker/mic button removed per spec.
-  // Widget shows:
-  //   • Drag handle (always)
-  //   • Speaking card with waveform + play/pause/stop + volume (when active)
-  //   • Compact hover panel with volume + replay (when hovered & inactive)
-  //   • Mute toggle pill (always — lets user turn guide off/on cleanly)
   // ─────────────────────────────────────────────────────────────────
   return (
     <>
@@ -531,69 +551,72 @@ export default function VoiceGuide() {
           </div>
         </div>
 
-        {/* ── Active speaking card (visible while speaking or paused) ── */}
+        {/* ── Active speaking card ── */}
         {isActive && (
           <div style={{
-            background: 'rgba(10,5,2,0.97)',
-            border: `1px solid ${accent}88`,
+            background:   'rgba(10,5,2,0.97)',
+            border:       `1px solid ${accent}88`,
             borderRadius: '16px',
-            padding: '0.9rem 1.1rem',
-            minWidth: '260px',
-            maxWidth: '310px',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.65)',
-            animation: 'vg-in 0.28s ease',
+            padding:      '0.9rem 1.1rem',
+            minWidth:     '260px',
+            maxWidth:     '310px',
+            boxShadow:    '0 8px 40px rgba(0,0,0,0.65)',
+            animation:    'vg-in 0.28s ease',
           }}>
-            {/* Header row: waveform + page name */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.8rem' }}>
-              {/* Animated waveform bars */}
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '20px', flexShrink: 0 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'0.65rem', marginBottom:'0.8rem' }}>
+              {/* Animated waveform */}
+              <div style={{ display:'flex', alignItems:'flex-end', gap:'2px', height:'20px', flexShrink:0 }}>
                 {[0.5, 0.9, 1.0, 0.7, 0.4].map((h, i) => (
                   <span key={i} style={{
-                    display: 'inline-block',
-                    width: '3px',
-                    height: `${h * 20}px`,
-                    borderRadius: '99px',
-                    background: accent,
+                    display:         'inline-block',
+                    width:           '3px',
+                    height:          `${h * 20}px`,
+                    borderRadius:    '99px',
+                    background:      accent,
                     transformOrigin: 'bottom',
-                    animation: speaking
+                    animation:       speaking
                       ? `vg-bar ${0.45 + i * 0.08}s ease-in-out infinite`
                       : 'none',
-                    animationDelay: `${i * 0.09}s`,
-                    opacity: speaking ? 1 : 0.25,
-                    transition: 'opacity 0.3s',
+                    animationDelay:  `${i * 0.09}s`,
+                    opacity:         speaking ? 1 : 0.25,
+                    transition:      'opacity 0.3s',
                   }} />
                 ))}
               </div>
-
-              <div style={{ flex: 1 }}>
+              <div style={{ flex:1 }}>
                 <p style={{
-                  color: accent, fontSize: '0.66rem', fontWeight: '800',
-                  margin: 0, textTransform: 'uppercase', letterSpacing: '0.1em',
+                  color:          accent,
+                  fontSize:       '0.66rem',
+                  fontWeight:     '800',
+                  margin:         0,
+                  textTransform:  'uppercase',
+                  letterSpacing:  '0.1em',
                 }}>
                   Voice Guide
                 </p>
-                <p style={{ color: '#f5ead8', fontSize: '0.86rem', fontWeight: '600', margin: 0 }}>
+                <p style={{ color:'#f5ead8', fontSize:'0.86rem', fontWeight:'600', margin:0 }}>
                   {paused ? '⏸ Paused' : pageName}
                 </p>
               </div>
             </div>
 
-            {/* Controls row */}
-            <div style={{ display: 'flex', gap: '0.45rem', alignItems: 'center' }}>
+            {/* Controls */}
+            <div style={{ display:'flex', gap:'0.45rem', alignItems:'center' }}>
               <CtrlBtn onClick={handlePlayPause} color={accent} title={paused ? 'Resume' : 'Pause'}>
                 {paused ? '▶' : '⏸'}
               </CtrlBtn>
-              <CtrlBtn onClick={handleStop} color="#e74c3c" title="Stop">
-                ⏹
-              </CtrlBtn>
+              <CtrlBtn onClick={handleStop} color="#e74c3c" title="Stop">⏹</CtrlBtn>
               <input
                 type="range" min="0" max="1" step="0.05"
                 value={volume} onChange={handleVolume}
-                style={{ flex: 1, accentColor: accent, cursor: 'pointer' }}
+                style={{ flex:1, accentColor:accent, cursor:'pointer' }}
               />
               <span style={{
-                color: accent, fontSize: '0.72rem', fontWeight: '800',
-                minWidth: '32px', textAlign: 'right',
+                color:      accent,
+                fontSize:   '0.72rem',
+                fontWeight: '800',
+                minWidth:   '32px',
+                textAlign:  'right',
               }}>
                 {Math.round(volume * 100)}%
               </span>
@@ -601,88 +624,98 @@ export default function VoiceGuide() {
           </div>
         )}
 
-        {/* ── Hover panel (idle state — replay + volume) ── */}
+        {/* ── Hover panel (idle) ── */}
         {showPanel && !isActive && (
           <div
             onMouseEnter={() => clearTimeout(hideRef.current)}
             onMouseLeave={() => { hideRef.current = setTimeout(() => setShowPanel(false), 400) }}
             style={{
-              background: 'rgba(10,5,2,0.97)',
-              border: `1px solid rgba(201,168,76,0.4)`,
+              background:   'rgba(10,5,2,0.97)',
+              border:       `1px solid rgba(201,168,76,0.4)`,
               borderRadius: '14px',
-              padding: '0.95rem 1.1rem',
-              minWidth: '235px',
-              boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
-              animation: 'vg-in 0.22s ease',
+              padding:      '0.95rem 1.1rem',
+              minWidth:     '235px',
+              boxShadow:    '0 8px 40px rgba(0,0,0,0.6)',
+              animation:    'vg-in 0.22s ease',
             }}
           >
             <p style={{
-              color: accent, fontSize: '0.7rem', fontWeight: '800',
-              margin: '0 0 0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em',
+              color:         accent,
+              fontSize:      '0.7rem',
+              fontWeight:    '800',
+              margin:        '0 0 0.7rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
             }}>
               Voice Guide
             </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.7rem' }}>
-              <span style={{ color: '#c8b89a', fontSize: '0.8rem', fontWeight: '600', minWidth: '62px' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'0.6rem', marginBottom:'0.7rem' }}>
+              <span style={{ color:'#c8b89a', fontSize:'0.8rem', fontWeight:'600', minWidth:'62px' }}>
                 🔊 Volume
               </span>
               <input
                 type="range" min="0" max="1" step="0.05"
                 value={volume} onChange={handleVolume}
-                style={{ flex: 1, accentColor: accent, cursor: 'pointer' }}
+                style={{ flex:1, accentColor:accent, cursor:'pointer' }}
               />
               <span style={{
-                color: accent, fontSize: '0.75rem', fontWeight: '800',
-                minWidth: '32px', textAlign: 'right',
+                color:      accent,
+                fontSize:   '0.75rem',
+                fontWeight: '800',
+                minWidth:   '32px',
+                textAlign:  'right',
               }}>
                 {Math.round(volume * 100)}%
               </span>
             </div>
             <button onClick={handleReplay} style={{
-              width: '100%', padding: '0.5rem',
-              background: accent + '22',
-              border: `1px solid ${accent}55`,
-              borderRadius: '8px',
-              color: accent, fontSize: '0.8rem', fontWeight: '700',
-              cursor: 'pointer', fontFamily: 'Georgia,serif',
+              width:       '100%',
+              padding:     '0.5rem',
+              background:  accent + '22',
+              border:      `1px solid ${accent}55`,
+              borderRadius:'8px',
+              color:       accent,
+              fontSize:    '0.8rem',
+              fontWeight:  '700',
+              cursor:      'pointer',
+              fontFamily:  'Georgia,serif',
             }}>
               🔁 Replay This Page
             </button>
           </div>
         )}
 
-        {/* ── Mute / status pill — replaces the old mic button ── */}
-        {/* Speaker icon removed. Pill shows current state and toggles mute. */}
+        {/* ── Mute / status pill ── */}
         <button
           onClick={toggleMute}
           onMouseEnter={() => { clearTimeout(hideRef.current); if (!isActive) setShowPanel(true) }}
           onMouseLeave={() => { hideRef.current = setTimeout(() => setShowPanel(false), 1000) }}
           title={muted ? 'Voice Guide is muted — click to unmute' : 'Click to mute Voice Guide'}
           style={{
-            background: 'rgba(10,5,2,0.88)',
-            border: `1px solid ${muted ? 'rgba(231,76,60,0.55)' : `${accent}44`}`,
-            borderRadius: '999px',
-            padding: '0.28rem 0.85rem',
-            color: muted ? '#e74c3c' : accent,
-            fontSize: '0.68rem',
-            fontWeight: '800',
-            cursor: 'pointer',
-            fontFamily: 'Georgia,serif',
+            background:     'rgba(10,5,2,0.88)',
+            border:         `1px solid ${muted ? 'rgba(231,76,60,0.55)' : `${accent}44`}`,
+            borderRadius:   '999px',
+            padding:        '0.28rem 0.85rem',
+            color:          muted ? '#e74c3c' : accent,
+            fontSize:       '0.68rem',
+            fontWeight:     '800',
+            cursor:         'pointer',
+            fontFamily:     'Georgia,serif',
             backdropFilter: 'blur(12px)',
-            letterSpacing: '0.06em',
-            transition: 'all 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.35rem',
+            letterSpacing:  '0.06em',
+            transition:     'all 0.2s',
+            display:        'flex',
+            alignItems:     'center',
+            gap:            '0.35rem',
           }}
         >
-          {/* Small inline dot indicator */}
           <span style={{
-            display: 'inline-block',
-            width: '6px', height: '6px',
-            borderRadius: '50%',
+            display:    'inline-block',
+            width:      '6px',
+            height:     '6px',
+            borderRadius:'50%',
             background: muted ? '#e74c3c' : (speaking ? accent : `${accent}88`),
-            boxShadow: speaking && !muted ? `0 0 6px ${accent}` : 'none',
+            boxShadow:  speaking && !muted ? `0 0 6px ${accent}` : 'none',
             transition: 'all 0.3s',
           }} />
           {muted ? 'VOICE OFF' : speaking ? 'PLAYING' : paused ? 'PAUSED' : 'VOICE ON'}
@@ -694,7 +727,7 @@ export default function VoiceGuide() {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// CTRL BUTTON SUB-COMPONENT
+// CTRL BUTTON
 // ─────────────────────────────────────────────────────────────────
 function CtrlBtn({ onClick, color, title, children }) {
   return (
@@ -703,14 +736,18 @@ function CtrlBtn({ onClick, color, title, children }) {
       title={title}
       className="vg-ctrl-btn"
       style={{
-        width: '32px', height: '32px',
-        borderRadius: '8px', flexShrink: 0,
+        width:      '32px',
+        height:     '32px',
+        borderRadius:'8px',
+        flexShrink: 0,
         background: color + '22',
-        border: `1px solid ${color}`,
+        border:     `1px solid ${color}`,
         color,
-        fontSize: '0.85rem',
-        cursor: 'pointer',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize:   '0.85rem',
+        cursor:     'pointer',
+        display:    'flex',
+        alignItems: 'center',
+        justifyContent:'center',
         fontFamily: 'Georgia,serif',
       }}
     >

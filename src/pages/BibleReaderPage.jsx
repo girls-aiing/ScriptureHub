@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
-
+import { announceHymnView } from '../components/VoiceGuide'
 // ── API KEY ───────────────────────────────────────────────────────
 const API_KEY = 'bP7SgKnADnw5o0lKdruPfuFGE7uur_gSyVGLhnlSAK'
 const KEY_LOOKS_VALID = API_KEY.length >= 32
@@ -696,13 +696,44 @@ export default function BibleReaderPage() {
   const [noteDraft,   setNoteDraft]   = useState('')
   const [toast,       setToast]       = useState(null)
   const [sidePanel,   setSidePanel]   = useState(null)
-  const noteRef = useRef(null)
+  const noteRef    = useRef(null)
+const prevViewRef = useRef(null)
+
+   // Announce hymn views to VoiceGuide
+  useEffect(()=>{
+    if (view === 'hymns')       { announceHymnView('hymns') }
+    if (view === 'hymn-detail') { announceHymnView('hymn-detail') }
+    if (view === 'books' && prevViewRef.current !== null) {
+      announceHymnView('books')
+    }
+    prevViewRef.current = view
+  },[view])
+
+   // Announce hymn views to VoiceGuide
+  useEffect(()=>{
+    if (view === 'hymns')       { announceHymnView('hymns') }
+    if (view === 'hymn-detail') { announceHymnView('hymn-detail') }
+    if (view === 'books' && prevViewRef.current !== null) {
+      announceHymnView('books')
+    }
+    prevViewRef.current = view
+  },[view])
 
   // Persist
   useEffect(()=>{ LS.set('sv_version',  version)    },[version])
   useEffect(()=>{ LS.set('sv_hl',       highlights) },[highlights])
   useEffect(()=>{ LS.set('sv_fav',      favorites)  },[favorites])
   useEffect(()=>{ LS.set('sv_notes',    notes)      },[notes])
+
+   // Announce singing mode to VoiceGuide
+  useEffect(()=>{
+    if (singingMode) announceHymnView('singing-mode')
+  },[singingMode])
+
+   // Announce singing mode to VoiceGuide
+  useEffect(()=>{
+    if (singingMode) announceHymnView('singing-mode')
+  },[singingMode])
 
   // Reset category when switching collection
   useEffect(()=>{ setHymnCategory('All'); setHymnSearch('') },[hymnCollection])
