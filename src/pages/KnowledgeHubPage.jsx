@@ -65,10 +65,10 @@ export default function KnowledgeHubPage() {
     setScreen('quiz')
   }, [])
 
-  // ── Select Answer ──
+  // ── Select Answer (now allows toggling) ──
   function handleSelect(option) {
-    if (selected !== null) return
-    setSelected(option)
+    // Allow toggling: click same option to deselect, click different to switch
+    setSelected(selected === option ? null : option)
   }
 
   // ── Next Question ──
@@ -213,7 +213,6 @@ export default function KnowledgeHubPage() {
                 key={i}
                 className={`kh-option ${selected === opt ? 'kh-option--selected' : ''}`}
                 onClick={() => handleSelect(opt)}
-                disabled={selected !== null}
                 style={
                   selected === opt
                     ? { borderColor: selectedTier.color, backgroundColor: selectedTier.bgColor }

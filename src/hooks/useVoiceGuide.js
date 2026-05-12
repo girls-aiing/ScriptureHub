@@ -61,7 +61,7 @@ const SCRIPTS = {
     message: `Welcome to the Knowledge Hub. 
       Here you can test and grow your understanding of scripture 
       through carefully crafted Bible quizzes. 
-      Choose your difficulty level — from beginner to scholar — 
+      Choose your difficulty level — from follower to visionary — 
       and challenge yourself to go deeper into the Word. 
       Every correct answer brings you one step closer to wisdom.`,
   },
