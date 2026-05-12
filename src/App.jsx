@@ -4,23 +4,25 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { ThemeProvider }    from './context/ThemeContext.jsx'
 import { LanguageProvider } from './context/LanguageContext.jsx'
 
-import Navbar           from './components/Navbar.jsx'
-import Footer           from './components/Footer.jsx'
-import FloatingChat     from './components/FloatingChat.jsx'
-import DarkModeToggle   from './components/DarkModeToggle.jsx'
-import VoiceGuide       from './components/VoiceGuide.jsx'
+import Navbar         from './components/Navbar.jsx'
+import Footer         from './components/Footer.jsx'
+import FloatingChat   from './components/FloatingChat.jsx'
+import DarkModeToggle from './components/DarkModeToggle.jsx'
+import VoiceGuide     from './components/VoiceGuide.jsx'
 
-import HomePage            from './pages/HomePage.jsx'
-import BibleReaderPage     from './pages/BibleReaderPage.jsx'
-import KnowledgeHubPage    from './pages/KnowledgeHubPage.jsx'
-import AIAdvicePage        from './pages/AIAdvicePage.jsx'
-import GrowthDashboardPage from './pages/GrowthDashboardPage.jsx'
-import DidYouKnowPage      from './pages/DidYouKnowPage.jsx'
-import GamesPage           from './pages/GamesPage.jsx'
-import CommunityPage       from './pages/CommunityPage.jsx'
-import SettingsPage        from './pages/SettingsPage.jsx'
-import NotFoundPage        from './pages/NotFoundPage.jsx'
-import StudyProgressPage   from './pages/StudyProgressPage.jsx'
+import HomePage          from './pages/HomePage.jsx'
+import BibleReaderPage   from './pages/BibleReaderPage.jsx'
+import KnowledgeHubPage  from './pages/KnowledgeHubPage.jsx'
+import AIAdvicePage      from './pages/AIAdvicePage.jsx'
+import DidYouKnowPage    from './pages/DidYouKnowPage.jsx'
+import GamesPage         from './pages/GamesPage.jsx'
+import CommunityPage     from './pages/CommunityPage.jsx'
+import SettingsPage      from './pages/SettingsPage.jsx'
+import NotFoundPage      from './pages/NotFoundPage.jsx'
+import StudyProgressPage from './pages/StudyProgressPage.jsx'
+
+// Pages where the floating chat should be hidden
+const HIDDEN_CHAT_PATHS = ['/ai']
 
 function ConditionalFooter() {
   const { pathname } = useLocation()
@@ -29,8 +31,7 @@ function ConditionalFooter() {
 
 function ConditionalChat() {
   const { pathname } = useLocation()
-  const hidden = ['/', '/dashboard', '/settings']
-  return hidden.includes(pathname) ? null : <FloatingChat />
+  return HIDDEN_CHAT_PATHS.includes(pathname) ? null : <FloatingChat />
 }
 
 function AppShell() {
@@ -43,7 +44,6 @@ function AppShell() {
           <Route path="/bible"        element={<BibleReaderPage />} />
           <Route path="/quizzes"      element={<KnowledgeHubPage />} />
           <Route path="/ai"           element={<AIAdvicePage />} />
-          <Route path="/dashboard"    element={<GrowthDashboardPage />} />
           <Route path="/did-you-know" element={<DidYouKnowPage />} />
           <Route path="/games"        element={<GamesPage />} />
           <Route path="/community"    element={<CommunityPage />} />

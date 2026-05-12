@@ -301,12 +301,6 @@ export default function Navbar({ toggleSlot }) {
             </Link>
           </li>
           <li>
-            <Link to="/dashboard" className={isActive('/dashboard') ? 'active' : ''}
-              onClick={() => { closeMenu(); playNavClick() }}>
-              {t('dashboard')}
-            </Link>
-          </li>
-          <li>
             <Link to="/did-you-know" className={isActive('/did-you-know') ? 'active' : ''}
               onClick={() => { closeMenu(); playNavClick() }}>
               {t('didYouKnow')}
@@ -388,12 +382,6 @@ export default function Navbar({ toggleSlot }) {
               <Link to="/ai" className={isActive('/ai') ? 'active' : ''}
                 onClick={() => { closeMenu(); playNavClick() }}>
                 🤖 AI Advisor
-              </Link>
-            </li>
-            <li>
-              <Link to="/dashboard" className={isActive('/dashboard') ? 'active' : ''}
-                onClick={() => { closeMenu(); playNavClick() }}>
-                📈 {t('dashboard')}
               </Link>
             </li>
             <li>
