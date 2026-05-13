@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react'
+import { useLanguage } from '../context/LanguageContext.jsx'
 
 // ══════════════════════════════════════════════════════════════════
 // DATA — Values, Scriptures & Practical Tips
@@ -206,7 +207,7 @@ function ValueDetail({ value, onBack }) {
 
   return (
     <div style={s.detailPage}>
-      <button style={s.backBtn} onClick={onBack}>← Back to Values</button>
+      <button style={s.backBtn} onClick={onBack}>← {t('back')}</button>
 
       {/* Hero */}
       <div style={{ ...s.detailHero, borderColor: value.color + '55' }}>
@@ -280,6 +281,7 @@ function ValueDetail({ value, onBack }) {
 // MAIN PAGE
 // ══════════════════════════════════════════════════════════════════
 export default function ValuesHubPage() {
+  const { t } = useLanguage()
   const [selected,  setSelected]  = useState(null)
   const [category,  setCategory]  = useState('All')
   const [search,    setSearch]    = useState('')
@@ -322,7 +324,7 @@ export default function ValuesHubPage() {
       {/* Hero banner */}
       <div style={s.heroBanner}>
         <div style={s.heroIcon}>🌟</div>
-        <h1 style={s.heroTitle}>Values for Success</h1>
+        <h1 style={s.heroTitle}>{t('valuesHub')}</h1>
         <p style={s.heroSub}>
           Where the Word of God meets real life in Ogbia and beyond.
           <br />

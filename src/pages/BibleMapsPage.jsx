@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
+import { useLanguage } from '../context/LanguageContext.jsx'
 
 // ══════════════════════════════════════════════════════════════════
 // MAP DATA
@@ -626,7 +627,7 @@ function InteractiveMap({ mapData }) {
       {/* Journey selector */}
       <div style={{ display:'flex', flexWrap:'wrap', gap:'8px', alignItems:'center' }}>
         <span style={{ color:'#c8a96e', fontSize:'0.82rem', fontWeight:'700', textTransform:'uppercase', letterSpacing:'0.06em' }}>
-          Filter by journey:
+          {t('filterByJourney')}:
         </span>
         <button
           style={{
@@ -642,7 +643,7 @@ function InteractiveMap({ mapData }) {
           }}
           onClick={() => setActiveJourney(null)}
         >
-          🌟 All Locations
+          🌟 {t('allLocations')}
         </button>
         {mapData.journeys.map(j => (
           <button
@@ -924,6 +925,7 @@ function TimelineView({ timeline }) {
 // MAIN PAGE
 // ══════════════════════════════════════════════════════════════════
 export default function BibleMapsPage() {
+  const { t } = useLanguage()
   const [mode,        setMode]        = useState('maps')    // 'maps' | 'timelines'
   const [activeMap,   setActiveMap]   = useState('paul')
   const [activeTime,  setActiveTime]  = useState('bible-overview')
@@ -944,7 +946,7 @@ export default function BibleMapsPage() {
       {/* ── Hero ── */}
       <div style={s.hero}>
         <div style={s.heroIcon}>🗺️</div>
-        <h1 style={s.heroTitle}>Bible Maps & Timelines</h1>
+ <h1 style={s.heroTitle}>{t('bibleMaps')} & {t('timelines')}</h1>
         <p style={s.heroSub}>
           See where the stories happened. Understand when they happened.
           <br />
@@ -978,13 +980,13 @@ export default function BibleMapsPage() {
           style={{ ...s.modeBtn, ...(mode === 'maps' ? s.modeBtnOn : {}) }}
           onClick={() => setMode('maps')}
         >
-          🗺️ Interactive Maps
+          🗺️ {t('interactiveMaps')}
         </button>
         <button
           style={{ ...s.modeBtn, ...(mode === 'timelines' ? s.modeBtnOn : {}) }}
           onClick={() => setMode('timelines')}
         >
-          📅 Timelines
+ 📅 {t('timelines')}
         </button>
       </div>
 

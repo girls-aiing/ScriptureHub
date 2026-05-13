@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { announceHymnView } from '../components/VoiceGuide'
+import { useLanguage } from '../context/LanguageContext.jsx'
 
 // ── API KEY ───────────────────────────────────────────────────────
 const API_KEY = 'bP7SgKnADnw5o0lKdruPfuFGE7uur_gSyVGLhnlSAK'
@@ -645,6 +646,7 @@ function SingingMode({ hymn, onClose, onSpeak, onStop, isReading }) {
 // ── Main Component
 // ═════════════════════════════════════════════════════════════════
 export default function BibleReaderPage() {
+  const { t } = useLanguage()
 
   // ── Core Bible state ──────────────────────────────────────────
   const [view,            setView]            = useState('books')
@@ -1085,8 +1087,8 @@ export default function BibleReaderPage() {
           </button>
         </div>
         <div style={s.tabs}>
-          <button style={{...s.tab,...(testament==='old'?s.tabOn:{})}} onClick={()=>setTestament('old')}>Old Testament</button>
-          <button style={{...s.tab,...(testament==='new'?s.tabOn:{})}} onClick={()=>setTestament('new')}>New Testament</button>
+           <button style={{...s.tab,...(testament==='old'?s.tabOn:{})}} onClick={()=>setTestament('old')}>{t('oldTestament')}</button>
+          <button style={{...s.tab,...(testament==='new'?s.tabOn:{})}} onClick={()=>setTestament('new')}>{t('newTestament')}</button>
           <button style={{...s.tab,border:'1px solid #f0c040'}} onClick={()=>setView('hymns')}>🎵 Hymn Centre</button>
         </div>
         <div style={s.grid}>
@@ -1187,7 +1189,8 @@ export default function BibleReaderPage() {
         {loading&&(
           <div style={s.centerMsg}>
             <div style={s.spinner}/>
-            <div style={{marginTop:'1rem',color:'#f0c040'}}>📖 Loading the Word of God…</div>
+            <div style={{marginTop:'1rem',color:'#f0c040'}}>📖 {t('loading')}</div>
+
           </div>
         )}
         {!loading&&error&&(

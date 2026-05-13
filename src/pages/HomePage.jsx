@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DailyManna from '../components/DailyManna.jsx'
 import { useTheme } from '../context/ThemeContext.jsx'
+import { useLanguage } from '../context/LanguageContext.jsx'
 
 const FEATURE_TEASERS = [
   {
@@ -48,7 +49,7 @@ const FEATURE_TEASERS = [
     title: 'Growth Dashboard',
     tagline: 'Visualize your spiritual progress and celebrate your learning milestones with your personalized monthly impact report.',
     ctaLabel: 'View My Progress',
-    to: '/dashboard',
+    to: '/progress',
     color: '#e74c3c',
   },
 ]
@@ -68,6 +69,7 @@ function loadNum(key) {
 export default function HomePage() {
   const navigate          = useNavigate()
   const { darkMode }      = useTheme()
+  const { t }             = useLanguage()
   const [stats, setStats] = useState({ quizzes: 0, secrets: 0, chapters: 0 })
   const [visible, setVisible] = useState(false)
 
@@ -84,7 +86,6 @@ export default function HomePage() {
   const quizPct    = Math.min(100, Math.round((stats.quizzes  / TOTAL_QUIZZES)  * 100))
   const chapterPct = Math.min(100, Math.round((stats.chapters / TOTAL_CHAPTERS) * 100))
 
-  // ── Color tokens — light vs dark ──────────────────────────────
   const C = darkMode ? {
     pageBg:       '#0a0500',
     heroGrad:     'linear-gradient(160deg, #1a0a00 0%, #2d1500 50%, #1a0800 100%)',
@@ -142,9 +143,7 @@ export default function HomePage() {
       minHeight:  '100vh',
     }}>
 
-      {/* ══════════════════════════════════════════════════════
-          HERO
-      ══════════════════════════════════════════════════════ */}
+      {/* ── HERO ── */}
       <section style={{
         background:   C.heroGrad,
         borderBottom: C.heroBorder,
@@ -160,7 +159,7 @@ export default function HomePage() {
             marginBottom:  '0.75rem',
             fontFamily:    'Georgia, serif',
             fontWeight:    '600',
-          }}>✝ Welcome to ScriptureHub</p>
+          }}>✝ {t('welcomeTitle')}</p>
 
           <h1 style={{
             fontSize:    'clamp(2rem, 5vw, 3rem)',
@@ -170,8 +169,9 @@ export default function HomePage() {
             margin:      '0 0 1rem',
             fontFamily:  'Georgia, serif',
           }}>
-            Your Daily Companion<br />
-            <span style={{ color: C.heroTitleGold }}>in God's Word</span>
+            {t('welcomeSub').split('.')[0]}
+            <br />
+            <span style={{ color: C.heroTitleGold }}>{t('word')}</span>
           </h1>
 
           <p style={{
@@ -182,8 +182,7 @@ export default function HomePage() {
             margin:     '0 auto 2rem',
             fontFamily: 'Georgia, serif',
           }}>
-            A professional platform for Bible study, theological discovery,
-            and spiritual growth — built for believers of every tradition.
+            {t('welcomeSub')}
           </p>
 
           <div style={{ display: 'flex', gap: '0.85rem', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -201,7 +200,7 @@ export default function HomePage() {
                 fontFamily:  'Georgia, serif',
                 boxShadow:   '0 4px 16px rgba(201,168,76,0.4)',
               }}
-            >📖 Start Reading</button>
+            >📖 {t('readBible')}</button>
             <button
               onClick={() => navigate('/did-you-know')}
               style={{
@@ -215,21 +214,17 @@ export default function HomePage() {
                 cursor:       'pointer',
                 fontFamily:   'Georgia, serif',
               }}
-            >🔍 Discover Secrets</button>
+            >🔍 {t('didYouKnow')}</button>
           </div>
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════════
-          DAILY MANNA
-      ══════════════════════════════════════════════════════ */}
+      {/* ── DAILY MANNA ── */}
       <section style={{ maxWidth: '900px', margin: '0 auto', padding: '2.5rem 1.5rem 0' }}>
         <DailyManna darkMode={darkMode} />
       </section>
 
-      {/* ══════════════════════════════════════════════════════
-          STUDY PROGRESS
-      ══════════════════════════════════════════════════════ */}
+      {/* ── STUDY PROGRESS ── */}
       <section style={{ maxWidth: '900px', margin: '0 auto', padding: '2.5rem 1.5rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
           <h2 style={{
@@ -238,14 +233,14 @@ export default function HomePage() {
             color:      C.sectionTitle,
             margin:     '0 0 0.5rem',
             fontFamily: 'Georgia, serif',
-          }}>📊 Your Study Progress</h2>
+          }}>📊 {t('studyProgress')}</h2>
           <p style={{
             fontSize:   '1rem',
             color:      C.sectionSub,
             margin:     0,
             fontFamily: 'Georgia, serif',
           }}>
-            Your journey through Scripture — tracked automatically as you explore.
+            {t('welcomeSub')}
           </p>
         </div>
 
@@ -255,26 +250,24 @@ export default function HomePage() {
           gap:                 '1.1rem',
         }}>
           <ProgressCard
-            icon="🔍" label="Bible Secrets Discovered"
+            icon="🔍" label={t('didYouKnow')}
             value={stats.secrets}  total={TOTAL_SECRETS}  pct={secretPct}
             color="#9b59b6" C={C} onClick={() => navigate('/did-you-know')}
           />
           <ProgressCard
-            icon="🏆" label="Quizzes Completed"
+            icon="🏆" label={t('quizzes')}
             value={stats.quizzes}  total={TOTAL_QUIZZES}  pct={quizPct}
             color="#e8a020" C={C} onClick={() => navigate('/quizzes')}
           />
           <ProgressCard
-            icon="📖" label="Bible Chapters Read"
+            icon="📖" label={t('bible')}
             value={stats.chapters} total={TOTAL_CHAPTERS} pct={chapterPct}
             color="#4a90d9" C={C} onClick={() => navigate('/bible')}
           />
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════════
-          FEATURE CARDS
-      ══════════════════════════════════════════════════════ */}
+      {/* ── FEATURE CARDS ── */}
       <section style={{ maxWidth: '1050px', margin: '0 auto', padding: '1rem 1.5rem 2.5rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h2 style={{
@@ -283,14 +276,14 @@ export default function HomePage() {
             color:      C.sectionTitle,
             margin:     '0 0 0.5rem',
             fontFamily: 'Georgia, serif',
-          }}>Explore the Word</h2>
+          }}>{t('exploreFeatures')}</h2>
           <p style={{
             fontSize:   '1rem',
             color:      C.sectionSub,
             margin:     0,
             fontFamily: 'Georgia, serif',
           }}>
-            Your next step in faith is just one click away. Choose where you want to grow today.
+            {t('startLearning')}
           </p>
         </div>
 
@@ -310,9 +303,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════════
-          CREDIBILITY STRIP
-      ══════════════════════════════════════════════════════ */}
+      {/* ── CREDIBILITY STRIP ── */}
       <section style={{
         display:        'flex',
         justifyContent: 'center',
@@ -323,11 +314,11 @@ export default function HomePage() {
         padding:        '1.75rem 1rem',
       }}>
         {[
-          { num: '66',     label: 'Books of the Bible' },
-          { num: '1,000+', label: 'Bible Quizzes' },
-          { num: '1,000+', label: 'Biblical Secrets' },
-          { num: '11',     label: 'Bible Translations' },
-          { num: '40+',    label: 'Bible Authors' },
+          { num: '66',     label: t('bible') },
+          { num: '1,000+', label: t('quizzes') },
+          { num: '1,000+', label: t('biblicalSecrets') },
+          { num: '11',     label: t('translation') },
+          { num: '40+',    label: t('by') + ' Authors' },
         ].map(({ num, label }, i, arr) => (
           <div key={label} style={{
             display:        'flex',
@@ -360,7 +351,6 @@ export default function HomePage() {
   )
 }
 
-// ── Progress Card ─────────────────────────────────────────────────
 function ProgressCard({ icon, label, value, total, pct, color, C, onClick }) {
   const [hovered, setHovered] = useState(false)
   return (
@@ -383,7 +373,6 @@ function ProgressCard({ icon, label, value, total, pct, color, C, onClick }) {
         fontFamily:    'Georgia, serif',
       }}
     >
-      {/* Top row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
         <span style={{ fontSize: '1.3rem' }}>{icon}</span>
         <span style={{
@@ -395,7 +384,6 @@ function ProgressCard({ icon, label, value, total, pct, color, C, onClick }) {
         }}>{label}</span>
       </div>
 
-      {/* Numbers */}
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.3rem' }}>
         <span style={{
           fontSize:   '2rem',
@@ -410,7 +398,6 @@ function ProgressCard({ icon, label, value, total, pct, color, C, onClick }) {
         }}>/ {total.toLocaleString()}</span>
       </div>
 
-      {/* Bar */}
       <div style={{
         height:       '8px',
         background:   C.cardBorder,
@@ -427,7 +414,6 @@ function ProgressCard({ icon, label, value, total, pct, color, C, onClick }) {
         }} />
       </div>
 
-      {/* Footer */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{
           fontSize:   '0.85rem',
@@ -444,7 +430,6 @@ function ProgressCard({ icon, label, value, total, pct, color, C, onClick }) {
   )
 }
 
-// ── Teaser Card ───────────────────────────────────────────────────
 function TeaserCard({ feature, C, onClick }) {
   const [hovered, setHovered] = useState(false)
   return (

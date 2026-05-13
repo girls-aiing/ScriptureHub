@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useTheme }    from '../context/ThemeContext.jsx'
-import { useLanguage } from '../context/LanguageContext.jsx'
+import { useLanguage, LANGUAGES } from '../context/LanguageContext.jsx'
 import { playSave, playToggle, playTabSwitch } from '../hooks/useSound.js'
 import { stopVoiceGuide } from '../hooks/useVoiceGuide.js'
 
@@ -40,18 +40,9 @@ const ACCENT_COLORS = [
   { label: 'Rose',     value: '#e84393' },
 ]
 
-const LANGUAGES = [
-  { value: 'english',    label: 'English',   flag: '🇬🇧' },
-  { value: 'french',     label: 'Français',  flag: '🇫🇷' },
-  { value: 'spanish',    label: 'Español',   flag: '🇪🇸' },
-  { value: 'portuguese', label: 'Português', flag: '🇧🇷' },
-  { value: 'yoruba',     label: 'Yorùbá',    flag: '🇳🇬' },
-  { value: 'swahili',    label: 'Kiswahili', flag: '🇰🇪' },
-]
-
 export default function SettingsPage() {
-  const { darkMode, toggleDarkMode } = useTheme()
-  const { language, changeLanguage, t } = useLanguage()
+  const { darkMode, toggleDarkMode }          = useTheme()
+  const { lang, changeLanguage, t }           = useLanguage()
   const [settings, setSettings] = useState(() => loadJSON('scripturehub_settings', DEFAULT_SETTINGS))
   const [saved,    setSaved]    = useState(false)
   const [section,  setSection]  = useState('appearance')
@@ -60,9 +51,7 @@ export default function SettingsPage() {
 
   function saveSettings() {
     saveJSON('scripturehub_settings', settings)
-    // Sync voice volume to its own key so VoiceGuide picks it up instantly
     localStorage.setItem('scripturehub_voice_volume', String(settings.voiceVolume ?? 0.85))
-    // Sync voice muted state
     localStorage.setItem('scripturehub_voice_muted', settings.voiceGuide === false ? 'true' : 'false')
     setSaved(true)
     playSave()
@@ -86,25 +75,25 @@ export default function SettingsPage() {
   }
 
   const C = darkMode ? {
-    pageBg: '#0a0500', cardBg: '#1e1008', cardBorder: 'rgba(201,168,76,0.2)',
-    title: '#f5ead8', text: '#f5ead8', muted: '#c8b89a', gold: '#f0c040',
-    inputBg: '#2a1810', inputBorder: 'rgba(201,168,76,0.35)', inputColor: '#f5ead8',
-    sidebarBg: '#150a04', divider: 'rgba(201,168,76,0.12)',
+    pageBg:      '#0a0500', cardBg: '#1e1008', cardBorder: 'rgba(201,168,76,0.2)',
+    title:       '#f5ead8', text: '#f5ead8', muted: '#c8b89a', gold: '#f0c040',
+    inputBg:     '#2a1810', inputBorder: 'rgba(201,168,76,0.35)', inputColor: '#f5ead8',
+    sidebarBg:   '#150a04', divider: 'rgba(201,168,76,0.12)',
   } : {
-    pageBg: '#f5f0e8', cardBg: '#ffffff', cardBorder: '#e0d8c8',
-    title: '#1a1a2e', text: '#1a1a2e', muted: '#666666', gold: '#8a6000',
-    inputBg: '#ffffff', inputBorder: '#c9a84c', inputColor: '#1a1a2e',
-    sidebarBg: '#ede8de', divider: '#e0d8c8',
+    pageBg:      '#f5f0e8', cardBg: '#ffffff', cardBorder: '#e0d8c8',
+    title:       '#1a1a2e', text: '#1a1a2e', muted: '#666666', gold: '#8a6000',
+    inputBg:     '#ffffff', inputBorder: '#c9a84c', inputColor: '#1a1a2e',
+    sidebarBg:   '#ede8de', divider: '#e0d8c8',
   }
 
   const SECTIONS = [
-    { id: 'appearance', icon: '🎨', label: t('appearance') },
-    { id: 'language',   icon: '🌍', label: t('language') },
-    { id: 'reading',    icon: '📖', label: t('reading') },
-    { id: 'study',      icon: '🎓', label: t('studyQuizzes') },
-    { id: 'features',   icon: '⚙️',  label: t('features') },
-    { id: 'account',    icon: '👤', label: t('accountData') },
-    { id: 'about',      icon: 'ℹ️',  label: t('about') },
+    { id: 'appearance', icon: '🎨', label: t('darkMode')       },
+    { id: 'language',   icon: '🌍', label: t('language')       },
+    { id: 'reading',    icon: '📖', label: t('bible')          },
+    { id: 'study',      icon: '🎓', label: t('quizzes')        },
+    { id: 'features',   icon: '⚙️',  label: t('settings')      },
+    { id: 'account',    icon: '👤', label: t('studyProgress')  },
+    { id: 'about',      icon: 'ℹ️',  label: 'About'            },
   ]
 
   return (
@@ -113,8 +102,8 @@ export default function SettingsPage() {
 
         <div style={{ marginBottom: '2rem' }}>
           <p style={{ color: settings.accentColor, fontSize: '0.82rem', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: '700', margin: '0 0 0.4rem' }}>⚙️ ScriptureHub</p>
-          <h1 style={{ fontSize: 'clamp(1.6rem,3vw,2.2rem)', fontWeight: '800', color: C.title, margin: '0 0 0.4rem' }}>{t('settingsTitle')}</h1>
-          <p style={{ color: C.muted, fontSize: '0.95rem', margin: 0 }}>{t('settingsSubtitle')}</p>
+          <h1 style={{ fontSize: 'clamp(1.6rem,3vw,2.2rem)', fontWeight: '800', color: C.title, margin: '0 0 0.4rem' }}>{t('settings')}</h1>
+          <p style={{ color: C.muted, fontSize: '0.95rem', margin: 0 }}>{t('saveSettings')}</p>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: '1.5rem', alignItems: 'start' }}>
@@ -137,7 +126,7 @@ export default function SettingsPage() {
             ))}
             <div style={{ borderTop: '1px solid ' + C.divider, marginTop: '0.75rem', paddingTop: '0.75rem' }}>
               <button onClick={saveSettings} style={{ width: '100%', padding: '0.75rem', background: 'linear-gradient(135deg,' + settings.accentColor + ',#a07830)', color: '#1a0a00', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'Georgia,serif' }}>
-                {saved ? t('saved') : t('saveSettings')}
+                {saved ? `✅ ${t('saved')}` : t('saveSettings')}
               </button>
             </div>
           </div>
@@ -148,11 +137,11 @@ export default function SettingsPage() {
             {/* ── APPEARANCE ── */}
             {section === 'appearance' && (
               <>
-                <SettingsCard title={t('darkMode')} desc={t('darkModeDesc')} C={C}>
+                <SettingsCard title={t('darkMode')} desc="Toggle between dark and light mode" C={C}>
                   <Toggle value={darkMode} onChange={() => { toggleDarkMode(); playToggle() }} accent={settings.accentColor} />
                 </SettingsCard>
 
-                <SettingsCard title={t('accentColour')} desc={t('accentColourDesc')} C={C}>
+                <SettingsCard title="🎨 Accent Colour" desc="Choose your preferred highlight colour" C={C}>
                   <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
                     {ACCENT_COLORS.map(ac => (
                       <button key={ac.value} onClick={() => { update('accentColor', ac.value); playToggle() }} title={ac.label}
@@ -161,25 +150,25 @@ export default function SettingsPage() {
                   </div>
                 </SettingsCard>
 
-                <SettingsCard title={t('fontSize')} desc={t('fontSizeDesc')} C={C}>
+                <SettingsCard title={t('fontSize')} desc="Adjust the text size across the app" C={C}>
                   <RadioGroup
-                    options={[{ label: t('small'), value: 'small' }, { label: t('medium'), value: 'medium' }, { label: t('large'), value: 'large' }, { label: t('extraLarge'), value: 'xlarge' }]}
+                    options={[{ label: t('small'), value: 'small' }, { label: t('medium'), value: 'medium' }, { label: t('large'), value: 'large' }, { label: 'XL', value: 'xlarge' }]}
                     value={settings.fontSize} onChange={v => { update('fontSize', v); playToggle() }} accent={settings.accentColor} C={C}
                   />
                 </SettingsCard>
 
-                <SettingsCard title={t('fontStyle')} desc={t('fontStyleDesc')} C={C}>
+                <SettingsCard title="Font Style" desc="Choose your preferred reading font" C={C}>
                   <RadioGroup
                     options={[{ label: 'Georgia', value: 'georgia' }, { label: 'Serif', value: 'serif' }, { label: 'Sans-Serif', value: 'sans' }, { label: 'Monospace', value: 'mono' }]}
                     value={settings.fontFamily} onChange={v => { update('fontFamily', v); playToggle() }} accent={settings.accentColor} C={C}
                   />
                 </SettingsCard>
 
-                <SettingsCard title={t('compactMode')} desc={t('compactModeDesc')} C={C}>
+                <SettingsCard title="Compact Mode" desc="Reduce spacing for more content on screen" C={C}>
                   <Toggle value={settings.compactMode} onChange={v => { update('compactMode', v); playToggle() }} accent={settings.accentColor} />
                 </SettingsCard>
 
-                <SettingsCard title={t('animations')} desc={t('animationsDesc')} C={C}>
+                <SettingsCard title="Animations" desc="Enable or disable page animations" C={C}>
                   <Toggle value={settings.animationsOn} onChange={v => { update('animationsOn', v); playToggle() }} accent={settings.accentColor} />
                 </SettingsCard>
               </>
@@ -188,49 +177,67 @@ export default function SettingsPage() {
             {/* ── LANGUAGE ── */}
             {section === 'language' && (
               <>
-                <SettingsCard title={'🌍 ' + t('language')} desc={t('languageDesc')} C={C}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: '0.75rem', marginTop: '0.75rem' }}>
-                    {LANGUAGES.map(lang => (
-                      <button key={lang.value} onClick={() => { changeLanguage(lang.value); playToggle() }} style={{
-                        display: 'flex', alignItems: 'center', gap: '0.75rem',
-                        padding: '0.85rem 1rem', borderRadius: '12px', cursor: 'pointer',
-                        background: language === lang.value ? settings.accentColor + '18' : C.cardBg,
-                        border: '2px solid ' + (language === lang.value ? settings.accentColor : C.cardBorder),
-                        color: language === lang.value ? settings.accentColor : C.text,
-                        fontFamily: 'Georgia,serif', fontSize: '0.95rem',
-                        fontWeight: language === lang.value ? '700' : '500',
-                        transition: 'all 0.2s', textAlign: 'left',
-                        boxShadow: language === lang.value ? '0 4px 14px ' + settings.accentColor + '30' : 'none',
-                      }}>
-                        <span style={{ fontSize: '1.5rem' }}>{lang.flag}</span>
+                <SettingsCard title={`🌍 ${t('selectLanguage')}`} desc="Choose the language for the entire app" C={C}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.75rem', marginTop: '0.75rem' }}>
+                    {LANGUAGES.map(language => (
+                      <button
+                        key={language.code}
+                        onClick={() => { changeLanguage(language.code); playToggle() }}
+                        style={{
+                          display:     'flex',
+                          alignItems:  'center',
+                          gap:         '0.75rem',
+                          padding:     '0.85rem 1rem',
+                          borderRadius:'12px',
+                          cursor:      'pointer',
+                          background:  lang === language.code ? settings.accentColor + '18' : C.cardBg,
+                          border:      '2px solid ' + (lang === language.code ? settings.accentColor : C.cardBorder),
+                          color:       lang === language.code ? settings.accentColor : C.text,
+                          fontFamily:  'Georgia,serif',
+                          fontSize:    '0.95rem',
+                          fontWeight:  lang === language.code ? '700' : '500',
+                          transition:  'all 0.2s',
+                          textAlign:   'left',
+                          boxShadow:   lang === language.code ? '0 4px 14px ' + settings.accentColor + '30' : 'none',
+                        }}
+                      >
+                        <span style={{ fontSize: '1.5rem' }}>{language.flag}</span>
                         <div>
-                          <p style={{ margin: 0, fontWeight: '700', fontSize: '0.92rem' }}>{lang.label}</p>
-                          {language === lang.value && <p style={{ margin: 0, fontSize: '0.72rem', color: settings.accentColor }}>✓ Active</p>}
+                          <p style={{ margin: 0, fontWeight: '700', fontSize: '0.92rem' }}>{language.nativeName}</p>
+                          <p style={{ margin: 0, fontWeight: '400', fontSize: '0.75rem', opacity: 0.7 }}>{language.name}</p>
+                          {lang === language.code && (
+                            <p style={{ margin: 0, fontSize: '0.72rem', color: settings.accentColor }}>✓ {t('saved')}</p>
+                          )}
                         </div>
                       </button>
                     ))}
                   </div>
                 </SettingsCard>
 
-                <SettingsCard title="✨ Live Preview" desc="See how your selected language looks across the site" C={C}>
+                {/* Live preview */}
+                <SettingsCard title="✨ Live Preview" desc="See how your selected language looks" C={C}>
                   <div style={{ background: C.pageBg, border: '1px solid ' + C.cardBorder, borderRadius: '12px', padding: '1.25rem', marginTop: '0.5rem' }}>
                     <p style={{ color: C.muted, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: '700', margin: '0 0 0.75rem' }}>Navbar Preview</p>
                     <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                      {['home','bible','quizzes','askAI','dashboard','community','settings'].map(key => (
+                      {['home','bible','quizzes','games','community','settings'].map(key => (
                         <span key={key} style={{ background: settings.accentColor + '18', border: '1px solid ' + settings.accentColor + '44', borderRadius: '6px', padding: '0.3rem 0.7rem', color: settings.accentColor, fontSize: '0.8rem', fontWeight: '600' }}>
                           {t(key)}
                         </span>
                       ))}
                     </div>
                     <div style={{ marginTop: '1rem', padding: '0.85rem', background: C.cardBg, border: '1px solid ' + C.cardBorder, borderRadius: '10px' }}>
-                      <p style={{ color: C.muted, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: '700', margin: '0 0 0.5rem' }}>Community Page Preview</p>
-                      <p style={{ color: C.title, fontWeight: '800', fontSize: '1rem', margin: '0 0 0.25rem' }}>{t('communityTitle')}</p>
-                      <p style={{ color: C.muted, fontSize: '0.85rem', margin: '0 0 0.75rem' }}>{t('communitySubtitle')}</p>
+                      <p style={{ color: C.title, fontWeight: '800', fontSize: '1rem', margin: '0 0 0.25rem' }}>{t('prayerJournal')}</p>
+                      <p style={{ color: C.muted, fontSize: '0.85rem', margin: '0 0 0.75rem' }}>{t('activePrayers')} · {t('answeredPrayers')}</p>
                       <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                        {['stoneWall','treasureChest','prophetPath','easterEggs'].map(key => (
+                        {['faith','love','hope','peace','grace','wisdom'].map(key => (
                           <span key={key} style={{ background: C.pageBg, border: '1px solid ' + C.cardBorder, borderRadius: '999px', padding: '0.3rem 0.75rem', color: C.muted, fontSize: '0.8rem' }}>{t(key)}</span>
                         ))}
                       </div>
+                    </div>
+                    <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: settings.accentColor + '10', border: '1px solid ' + settings.accentColor + '30', borderRadius: '8px' }}>
+                      <p style={{ color: settings.accentColor, fontSize: '0.82rem', fontWeight: '700', margin: 0 }}>
+                        {t('didYouKnow')} · {t('biblicalSecrets')} · {t('deepSearch')} · {t('bibleMaps')}
+                      </p>
                     </div>
                   </div>
                 </SettingsCard>
@@ -240,26 +247,26 @@ export default function SettingsPage() {
             {/* ── READING ── */}
             {section === 'reading' && (
               <>
-                <SettingsCard title={t('defaultBible')} desc={t('defaultBibleDesc')} C={C}>
+                <SettingsCard title={t('translation')} desc="Choose your default Bible translation" C={C}>
                   <SelectInput options={['KJV','NIV','ESV','NKJV','NLT','AMP','MSG','CSB','NASB','RSV']} value={settings.defaultBible} onChange={v => { update('defaultBible', v); playToggle() }} C={C} />
                 </SettingsCard>
 
-                <SettingsCard title={t('readingGoal')} desc={t('readingGoalDesc')} C={C}>
+                <SettingsCard title={t('dailyGoal')} desc="Set your daily Bible reading goal" C={C}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
                     <input type="range" min={1} max={10} value={settings.readingGoal}
                       onChange={e => update('readingGoal', Number(e.target.value))}
                       style={{ flex: 1, accentColor: settings.accentColor }} />
                     <span style={{ color: settings.accentColor, fontWeight: '800', fontSize: '1.1rem', minWidth: '100px' }}>
-                      {settings.readingGoal} {settings.readingGoal === 1 ? t('chapter') : t('chapters')}
+                      {settings.readingGoal} {t('chapter')}{settings.readingGoal !== 1 ? 's' : ''}
                     </span>
                   </div>
                 </SettingsCard>
 
-                <SettingsCard title={t('verseOfDay')} desc={t('verseOfDayDesc')} C={C}>
+                <SettingsCard title={t('verseOfDay')} desc="Show a verse of the day on the home screen" C={C}>
                   <Toggle value={settings.verseOfDay} onChange={v => { update('verseOfDay', v); playToggle() }} accent={settings.accentColor} />
                 </SettingsCard>
 
-                <SettingsCard title={t('autoPlay')} desc={t('autoPlayDesc')} C={C}>
+                <SettingsCard title="Auto-Play Audio" desc="Automatically play audio when opening a chapter" C={C}>
                   <Toggle value={settings.autoPlayAudio} onChange={v => { update('autoPlayAudio', v); playToggle() }} accent={settings.accentColor} />
                 </SettingsCard>
               </>
@@ -268,37 +275,31 @@ export default function SettingsPage() {
             {/* ── STUDY ── */}
             {section === 'study' && (
               <>
-                <SettingsCard title={t('quizDifficulty')} desc={t('quizDifficultyDesc')} C={C}>
+                <SettingsCard title={t('difficulty')} desc="Set your default quiz difficulty" C={C}>
                   <RadioGroup
-                    options={[{ label: t('beginner'), value: 'beginner' }, { label: t('medium'), value: 'medium' }, { label: t('hard'), value: 'hard' }, { label: t('scholar'), value: 'scholar' }]}
+                    options={[{ label: t('beginner'), value: 'beginner' }, { label: t('medium'), value: 'medium' }, { label: t('advanced'), value: 'hard' }, { label: 'Scholar', value: 'scholar' }]}
                     value={settings.quizDifficulty} onChange={v => { update('quizDifficulty', v); playToggle() }} accent={settings.accentColor} C={C}
                   />
                 </SettingsCard>
 
-                <SettingsCard title={t('showStreak')} desc={t('showStreakDesc')} C={C}>
+                <SettingsCard title={t('streak')} desc="Show your daily study streak" C={C}>
                   <Toggle value={settings.showStreak} onChange={v => { update('showStreak', v); playToggle() }} accent={settings.accentColor} />
                 </SettingsCard>
 
-                <SettingsCard title={t('notifications')} desc={t('notificationsDesc')} C={C}>
+                <SettingsCard title={t('notifications')} desc="Enable study reminders and notifications" C={C}>
                   <Toggle value={settings.notifications} onChange={v => { update('notifications', v); playToggle() }} accent={settings.accentColor} />
                 </SettingsCard>
 
-                <SettingsCard title={t('soundEffects')} desc={t('soundEffectsDesc')} C={C}>
+                <SettingsCard title="Sound Effects" desc="Enable sound effects throughout the app" C={C}>
                   <Toggle value={settings.soundEffects} onChange={v => { update('soundEffects', v); playToggle() }} accent={settings.accentColor} />
                 </SettingsCard>
 
-                {/* ── VOICE GUIDE CARD ── */}
-                <SettingsCard
-                  title="🎙️ Voice Guide"
-                  desc="A calm AI voice welcomes you on each page and explains what you can do there. Perfect for all ages and accessibility needs."
-                  C={C}
-                >
+                {/* Voice Guide */}
+                <SettingsCard title={`🎙️ ${t('voiceGuide')}`} desc="A calm AI voice welcomes you on each page and explains what you can do there." C={C}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-
-                    {/* Enable / disable toggle */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span style={{ color: C.muted, fontSize: '0.88rem', fontWeight: '600' }}>
-                        {settings.voiceGuide !== false ? '🔊 Voice Guide is ON' : '🔇 Voice Guide is OFF'}
+                        {settings.voiceGuide !== false ? `🔊 ${t('voiceGuide')} ON` : `🔇 ${t('voiceGuide')} OFF`}
                       </span>
                       <Toggle
                         value={settings.voiceGuide !== false}
@@ -311,8 +312,6 @@ export default function SettingsPage() {
                         accent={settings.accentColor}
                       />
                     </div>
-
-                    {/* Volume slider */}
                     {settings.voiceGuide !== false && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <span style={{ color: C.muted, fontSize: '0.85rem', fontWeight: '600', minWidth: '80px' }}>
@@ -333,16 +332,13 @@ export default function SettingsPage() {
                         </span>
                       </div>
                     )}
-
-                    {/* Info box */}
                     <div style={{ background: settings.accentColor + '12', border: '1px solid ' + settings.accentColor + '33', borderRadius: '10px', padding: '0.85rem 1rem' }}>
                       <p style={{ color: C.muted, fontSize: '0.82rem', margin: 0, lineHeight: '1.7' }}>
-                        ✦ The voice speaks <strong style={{ color: C.title }}>once per page per session</strong> — it will not repeat if you navigate back and forth.<br />
-                        ✦ You can pause, replay, or stop it using the <strong style={{ color: C.title }}>🎙️ button</strong> in the bottom-right corner.<br />
+                        ✦ The voice speaks <strong style={{ color: C.title }}>once per page per session</strong>.<br />
+                        ✦ Pause, replay, or stop using the <strong style={{ color: C.title }}>🎙️ button</strong> in the corner.<br />
                         ✦ Uses your device's built-in voice engine — <strong style={{ color: C.title }}>no internet required</strong>.
                       </p>
                     </div>
-
                   </div>
                 </SettingsCard>
               </>
@@ -351,7 +347,7 @@ export default function SettingsPage() {
             {/* ── FEATURES ── */}
             {section === 'features' && (
               <>
-                <SettingsCard title={t('floatingChat')} desc={t('floatingChatDesc')} C={C}>
+                <SettingsCard title="💬 Floating Chat" desc="Show the floating AI chat button" C={C}>
                   <Toggle value={settings.floatingChat} onChange={v => { update('floatingChat', v); playToggle() }} accent={settings.accentColor} />
                 </SettingsCard>
                 <SettingsCard title="🪨 Stone Wall" desc="Enable the community Stone of Remembrance wall" C={C}>
@@ -372,11 +368,11 @@ export default function SettingsPage() {
             {/* ── ACCOUNT ── */}
             {section === 'account' && (
               <>
-                <SettingsCard title={t('progressSummary')} desc={t('progressDesc')} C={C}>
-                  <ProgressSummary C={C} accent={settings.accentColor} />
+                <SettingsCard title={t('studyProgress')} desc="Your current study statistics" C={C}>
+                  <ProgressSummary C={C} accent={settings.accentColor} t={t} />
                 </SettingsCard>
 
-                <SettingsCard title={t('exportData')} desc={t('exportDesc')} C={C}>
+                <SettingsCard title="📤 Export Data" desc="Download all your ScriptureHub data" C={C}>
                   <button onClick={() => {
                     const data = {}
                     for (let i = 0; i < localStorage.length; i++) {
@@ -389,19 +385,19 @@ export default function SettingsPage() {
                     a.href = url; a.download = 'scripturehub-data.json'; a.click()
                     URL.revokeObjectURL(url)
                   }} style={{ background: 'linear-gradient(135deg,' + settings.accentColor + ',#a07830)', color: '#1a0a00', border: 'none', borderRadius: '10px', padding: '0.7rem 1.5rem', fontWeight: '800', fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'Georgia,serif' }}>
-                    {t('downloadBtn')}
+                    📥 Download
                   </button>
                 </SettingsCard>
 
-                <SettingsCard title={t('resetSettings')} desc={t('resetDesc')} C={C}>
+                <SettingsCard title={t('resetSettings')} desc="Reset all settings to their default values" C={C}>
                   <button onClick={resetSettings} style={{ background: 'transparent', color: '#e67e22', border: '2px solid #e67e22', borderRadius: '10px', padding: '0.65rem 1.4rem', fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'Georgia,serif' }}>
-                    {t('resetBtn')}
+                    {t('resetSettings')}
                   </button>
                 </SettingsCard>
 
-                <SettingsCard title={t('clearData')} desc={t('clearDesc')} C={C} danger>
+                <SettingsCard title="🗑 Clear All Data" desc="Permanently delete all your progress and data" C={C} danger>
                   <button onClick={clearAllData} style={{ background: 'transparent', color: '#e74c3c', border: '2px solid #e74c3c', borderRadius: '10px', padding: '0.65rem 1.4rem', fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'Georgia,serif' }}>
-                    {t('clearBtn')}
+                    {t('delete')} All Data
                   </button>
                 </SettingsCard>
               </>
@@ -412,8 +408,8 @@ export default function SettingsPage() {
               <>
                 <SettingsCard title="✦ About ScriptureHub" desc="" C={C}>
                   <div style={{ lineHeight: '1.85', color: C.muted, fontSize: '0.95rem' }}>
-                    <p style={{ margin: '0 0 0.75rem' }}><strong style={{ color: C.title }}>ScriptureHub</strong> is a sacred digital space built to help believers engage deeply with the Word of God.</p>
-                    <p style={{ margin: '0 0 0.75rem' }}>Built with love by <strong style={{ color: settings.accentColor }}>Silas Clergy</strong>.</p>
+                    <p style={{ margin: '0 0 0.75rem' }}><strong style={{ color: C.title }}>ScriptureHub</strong> is a sacred digital space built to help believers engage deeply with the {t('word')} of {t('god')}.</p>
+                    <p style={{ margin: '0 0 0.75rem' }}>Built with {t('love')} by <strong style={{ color: settings.accentColor }}>Silas Clergy</strong>.</p>
                     <p style={{ margin: 0, fontStyle: 'italic', color: settings.accentColor, fontWeight: '600' }}>"Your word is a lamp to my feet and a light to my path." — Psalm 119:105</p>
                   </div>
                 </SettingsCard>
@@ -421,40 +417,17 @@ export default function SettingsPage() {
                 <SettingsCard title="📋 Version & Info" desc="" C={C}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                     {[
-                      ['Version',     '2.0.0'],
-                      ['Platform',    'React + Vite'],
-                      ['Storage',     'Local Browser Storage'],
-                      ['Bible API',   'bible-api.com'],
-                      ['AI Model',    'Google Gemini'],
-                      ['Audio',       'Web Audio API — No external files'],
-                      ['Voice Guide', 'Web Speech API — Built into your browser'],
-                      ['Languages',   LANGUAGES.map(l => l.label).join(', ')],
+                      [t('language'),    LANGUAGES.map(l => l.nativeName).join(', ')],
+                      ['Version',        '2.0.0'],
+                      ['Platform',       'React + Vite'],
+                      ['Storage',        'Local Browser Storage'],
+                      ['Bible API',      'bible-api.com'],
+                      ['AI Model',       'Google Gemini'],
+                      ['Voice Guide',    'Web Speech API'],
                     ].map(([k,v]) => (
                       <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid ' + C.divider }}>
                         <span style={{ color: C.muted, fontSize: '0.88rem', fontWeight: '600' }}>{k}</span>
                         <span style={{ color: C.title, fontSize: '0.88rem', fontWeight: '700', textAlign: 'right', maxWidth: '60%' }}>{v}</span>
-                      </div>
-                    ))}
-                  </div>
-                </SettingsCard>
-
-                <SettingsCard title="🔊 Audio Guide" desc="What each sound means" C={C}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.25rem' }}>
-                    {[
-                      ['📄 Paper Whoosh',    'Every page navigation'],
-                      ['🪵 Wooden Tap',      'Navbar link click'],
-                      ['🎵 Harp Chime',      'Quiz correct answer'],
-                      ['🔔 Soft Bell',       'Amen given on stone'],
-                      ['✨ Ambient Shimmer', 'Easter egg discovered'],
-                      ['🎶 Choir Hum',       'Badge or milestone earned'],
-                      ['🪨 Deep Tap',        'Stone carved on wall'],
-                      ['🔘 Click-Clack',     'Toggle or tab switch'],
-                      ['💾 Confirmation',    'Settings saved'],
-                      ['🎙️ Voice Guide',     'Calm spoken welcome on each page'],
-                    ].map(([k,v]) => (
-                      <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0', borderBottom: '1px solid ' + C.divider }}>
-                        <span style={{ color: C.title, fontSize: '0.85rem', fontWeight: '600' }}>{k}</span>
-                        <span style={{ color: C.muted, fontSize: '0.82rem' }}>{v}</span>
                       </div>
                     ))}
                   </div>
@@ -465,10 +438,10 @@ export default function SettingsPage() {
             {/* ── Bottom save/reset bar ── */}
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', paddingTop: '0.5rem' }}>
               <button onClick={resetSettings} style={{ background: 'transparent', color: C.muted, border: '2px solid ' + C.cardBorder, borderRadius: '10px', padding: '0.65rem 1.4rem', fontWeight: '600', fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'Georgia,serif' }}>
-                {t('reset')}
+                {t('resetSettings')}
               </button>
               <button onClick={saveSettings} style={{ background: 'linear-gradient(135deg,' + settings.accentColor + ',#a07830)', color: '#1a0a00', border: 'none', borderRadius: '10px', padding: '0.65rem 1.75rem', fontWeight: '800', fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'Georgia,serif' }}>
-                {saved ? t('saved') : t('saveSettings')}
+                {saved ? `✅ ${t('saved')}` : t('saveSettings')}
               </button>
             </div>
 
@@ -521,19 +494,19 @@ function SelectInput({ options, value, onChange, C }) {
   )
 }
 
-function ProgressSummary({ C, accent }) {
+function ProgressSummary({ C, accent, t }) {
   const stats  = loadJSON('scripturehub_stats', {})
   const stones = loadJSON('scripturehub_stones', [])
   const eggs   = loadJSON('scripturehub_eggs_found', [])
   const amened = loadJSON('scripturehub_amened', [])
   const items  = [
-    { icon: '🪨', label: 'Stones Carved',  value: stats.stones   || stones.length || 0 },
-    { icon: '🙏', label: 'Amens Given',    value: stats.amens    || amened.length || 0 },
-    { icon: '📜', label: 'Quizzes Done',   value: stats.quizzes  || 0 },
-    { icon: '📖', label: 'Chapters Read',  value: stats.chapters || 0 },
-    { icon: '🔍', label: 'Eggs Found',     value: eggs.length },
-    { icon: '🕊️', label: 'Missions Done',  value: stats.missions || 0 },
-    { icon: '🔥', label: 'Day Streak',     value: stats.streak   || 0 },
+    { icon: '🪨', label: 'Stones Carved',        value: stats.stones   || stones.length || 0 },
+    { icon: '🙏', label: t('amen'),               value: stats.amens    || amened.length || 0 },
+    { icon: '📜', label: t('quizzes'),            value: stats.quizzes  || 0 },
+    { icon: '📖', label: t('chaptersRead'),       value: stats.chapters || 0 },
+    { icon: '🔍', label: t('discovered'),         value: eggs.length },
+    { icon: '🕊️', label: 'Missions',             value: stats.missions || 0 },
+    { icon: '🔥', label: t('streak'),             value: stats.streak   || 0 },
   ]
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(120px,1fr))', gap: '0.75rem', marginTop: '0.5rem' }}>

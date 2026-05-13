@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { useLanguage } from '../context/LanguageContext.jsx'
 
 // ══════════════════════════════════════════════════════════════════
 // CURATED VERSE DATABASE
@@ -319,7 +320,7 @@ function ResultCard({ result, index, query, onCopy }) {
           marginBottom: '0.75rem',
         }}>
           <div style={{ color:'#f0c040', fontSize:'0.75rem', fontWeight:'700', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'4px' }}>
-            🤖 Why this verse
+         🤖 {t('whyThisVerse')}
           </div>
           <p style={{ color:'#c8a96e', fontSize:'0.92rem', lineHeight:'1.7', margin:0, fontStyle:'italic' }}>
             {result.explanation}
@@ -343,7 +344,7 @@ function ResultCard({ result, index, query, onCopy }) {
             transition: 'all 0.2s',
           }}
         >
-          {copied ? '✅ Copied!' : '📋 Copy Verse'}
+ {copied ? `✅ ${t('copied')}` : `📋 ${t('copyVerse')}`}
         </button>
         <a
           href={`https://www.biblegateway.com/passage/?search=${encodeURIComponent(result.ref)}&version=NIV`}
@@ -362,7 +363,7 @@ function ResultCard({ result, index, query, onCopy }) {
             display:        'inline-block',
           }}
         >
-          🔗 Read in Context
+  🔗 {t('readInContext')}
         </a>
       </div>
     </div>
@@ -386,7 +387,7 @@ function AIInsightPanel({ insight, query }) {
       <div style={{ display:'flex', gap:'10px', alignItems:'center', marginBottom:'0.75rem' }}>
         <span style={{ fontSize:'1.5rem' }}>🤖</span>
         <div>
-          <div style={{ color:'#f0c040', fontSize:'1rem', fontWeight:'700' }}>AI Scripture Insight</div>
+           <div style={{ color:'#f0c040', fontSize:'1rem', fontWeight:'700' }}>{t('aiInsight')}</div>
           <div style={{ color:'#c8a96e', fontSize:'0.78rem' }}>Personalised guidance for your search</div>
         </div>
       </div>
@@ -425,6 +426,7 @@ function clearHistory() {
 // MAIN PAGE
 // ══════════════════════════════════════════════════════════════════
 export default function DeepSearchPage() {
+  const { t } = useLanguage()
   const [query,       setQuery]       = useState('')
   const [results,     setResults]     = useState([])
   const [aiInsight,   setAiInsight]   = useState('')
@@ -578,7 +580,7 @@ Only return PART 1 and PART 2. Nothing else.`
       {/* ── Hero ── */}
       <div style={s.hero}>
         <div style={s.heroIcon}>🔍</div>
-        <h1 style={s.heroTitle}>AI Deep Search</h1>
+         <h1 style={s.heroTitle}>{t('deepSearch')}</h1>
         <p style={s.heroSub}>
           Don't search for words. Search for <em>meaning.</em>
           <br />
@@ -600,7 +602,7 @@ Only return PART 1 and PART 2. Nothing else.`
               ref={inputRef}
               style={s.searchInput}
               type="text"
-              placeholder='Try: "I feel lonely" or "How to forgive someone who hurt me"'
+                          placeholder={t('searchPlaceholder')}
               value={query}
               onChange={e => setQuery(e.target.value)}
               onFocus={() => setShowHistory(history.length > 0)}
@@ -622,7 +624,7 @@ Only return PART 1 and PART 2. Nothing else.`
             <div style={s.historyDrop}>
               <div style={s.historyHeader}>
                 <span style={{ color:'#c8a96e', fontSize:'0.75rem', fontWeight:'700', textTransform:'uppercase', letterSpacing:'0.08em' }}>
-                  🕐 Recent Searches
+                  🕐 {t('recentSearches')}
                 </span>
                 <button style={s.clearHistBtn} onClick={handleClearHistory}>Clear</button>
               </div>
@@ -708,7 +710,7 @@ Only return PART 1 and PART 2. Nothing else.`
             <div style={s.resultsHeader}>
               <div>
                 <span style={{ color:'#f0c040', fontSize:'1.1rem', fontWeight:'700' }}>
-                  {loading ? 'Searching…' : `${totalResults} verse${totalResults !== 1 ? 's' : ''} found`}
+                               {loading ? t('loading') : `${totalResults} ${t('searchResults')}`}
                 </span>
                 {!loading && totalResults > 0 && (
                   <span style={{ color:'#7a6040', fontSize:'0.85rem', marginLeft:'8px', fontStyle:'italic' }}>

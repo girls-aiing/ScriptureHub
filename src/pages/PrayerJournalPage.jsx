@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
+import { useLanguage } from '../context/LanguageContext.jsx'
 
 // ══════════════════════════════════════════════════════════════════
 // STORAGE HELPERS
@@ -210,7 +211,7 @@ function PrayerCard({ prayer, onMarkAnswered, onDelete, onEdit, onAddNote, index
         {!prayer.answered && (
           <button style={pc.answeredBtn}
             onClick={() => onMarkAnswered(prayer.id)}>
-            ✅ Mark Answered
+            ✅ {t('markAnswered')}
           </button>
         )}
         <button style={pc.noteBtn}
@@ -453,6 +454,7 @@ function StatsPanel({ prayers }) {
 // MAIN PAGE
 // ══════════════════════════════════════════════════════════════════
 export default function PrayerJournalPage() {
+  const { t } = useLanguage()
   const [prayers,       setPrayers]       = useState(() => LS.get())
   const [view,          setView]          = useState('active')   // 'active' | 'answered' | 'all' | 'stats'
   const [showForm,      setShowForm]      = useState(false)
@@ -603,7 +605,7 @@ export default function PrayerJournalPage() {
       {/* ── Hero ── */}
       <div style={s.hero}>
         <div style={s.heroIcon}>🙏</div>
-        <h1 style={s.heroTitle}>My Prayer Journal</h1>
+              <h1 style={s.heroTitle}>{t('prayerJournal')}</h1>
         <p style={s.heroSub}>
           A private space between you and God.
           <br />
@@ -644,7 +646,7 @@ export default function PrayerJournalPage() {
       {!showForm && (
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <button style={s.addBtn} onClick={() => setShowForm(true)}>
-            + New Prayer Request
+            + {t('newPrayer')}
           </button>
           <button
             style={{ ...s.addBtn, background: 'transparent', border: '1px solid rgba(240,192,64,0.3)', marginLeft: '12px' }}
@@ -675,9 +677,9 @@ export default function PrayerJournalPage() {
       {/* ── View tabs ── */}
       <div style={s.tabRow}>
         {[
-          { id: 'active',   label: `🙏 Active (${activeCount})` },
-          { id: 'answered', label: `✅ Answered (${answeredCount})` },
-          { id: 'all',      label: `📋 All (${prayers.length})` },
+          { id: 'active',   label: `🙏 ${t('activePrayers')} (${activeCount})` },
+          { id: 'answered', label: `✅ ${t('answeredPrayers')} (${answeredCount})` },
+          { id: 'all',      label: `📋 ${t('viewAll')} (${prayers.length})` },
         ].map(tab => (
           <button
             key={tab.id}

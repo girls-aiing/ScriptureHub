@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useTheme } from '../context/ThemeContext.jsx'
+import { useLanguage } from '../context/LanguageContext.jsx'
 import { speakText } from '../components/VoiceGuide.jsx'
 
 // ════════════════════════════════════════════════════════════════
@@ -472,11 +473,11 @@ const GAMES = [
 ]
 
 const CATS = [
-  { id:'all',         label:'All Games',   icon:'🎮' },
-  { id:'daily',       label:'Daily',       icon:'📅' },
-  { id:'competitive', label:'Competitive', icon:'🏆' },
-  { id:'discovery',   label:'Discovery',   icon:'🔍' },
-  { id:'strategy',    label:'Strategy',    icon:'🧠' },
+  { id:'all',         labelKey:'allGames',    icon:'🎮' },
+  { id:'daily',       labelKey:'daily',       icon:'📅' },
+  { id:'competitive', labelKey:'competitive', icon:'🏆' },
+  { id:'discovery',   labelKey:'discovery',   icon:'🔍' },
+  { id:'strategy',    labelKey:'strategy',    icon:'🧠' },
 ]
 
 // ════════════════════════════════════════════════════════════════
@@ -491,7 +492,7 @@ function RankPicker({ game, C, onSelect, onBack }) {
         onClick={onBack}
         style={{ background:'none', border:'none', color:C.purple, fontWeight:'700', cursor:'pointer', fontFamily:'Georgia,serif', marginBottom:'1.5rem', fontSize:'0.95rem' }}
       >
-        ← Back to Arcade
+        ← {t('backToArcade')}
       </button>
 
       {/* Game title */}
@@ -501,7 +502,7 @@ function RankPicker({ game, C, onSelect, onBack }) {
           {game.title}
         </h2>
         <p style={{ color:C.muted, fontFamily:'Georgia,serif', fontSize:'0.95rem', margin:0 }}>
-          Choose your rank before you begin
+        {t('chooseRank')}
         </p>
       </div>
 
@@ -563,6 +564,7 @@ function RankPicker({ game, C, onSelect, onBack }) {
 // ════════════════════════════════════════════════════════════════
 export default function GamesPage() {
   const { darkMode } = useTheme()
+  const { t } = useLanguage()
   const [activeGame, setActiveGame]       = useState(null)
   const [selectedRank, setSelectedRank]   = useState(null)
   const [pendingGame, setPendingGame]     = useState(null)
@@ -637,6 +639,7 @@ export default function GamesPage() {
         C={C}
         onSelect={handleRankSelect}
         onBack={handleBackFromRank}
+        t={t}
       />
     </div>
   )
@@ -648,7 +651,7 @@ export default function GamesPage() {
       {selectedRank && (
         <div style={{ maxWidth:'780px', margin:'0 auto 1rem', display:'flex', alignItems:'center', gap:'8px' }}>
           <span style={{ background:selectedRank.bgColor, border:`1px solid ${selectedRank.color}`, borderRadius:'999px', padding:'4px 14px', color:selectedRank.color, fontWeight:'800', fontSize:'0.82rem', fontFamily:'Georgia,serif' }}>
-            {selectedRank.icon} {selectedRank.id} Rank
+            {selectedRank.icon} {selectedRank.id} {t('rank')}
           </span>
         </div>
       )}
@@ -676,10 +679,10 @@ export default function GamesPage() {
     <div style={{ background:C.bg, minHeight:'100vh', padding:'2rem 1.5rem', fontFamily:'Georgia,serif' }}>
       <div style={{ maxWidth:'1040px', margin:'0 auto' }}>
         <div style={{ textAlign:'center', marginBottom:'2.5rem' }}>
-          <h1 style={{ fontSize:'clamp(2rem,5vw,3rem)', fontWeight:'800', color:C.text, margin:'0 0 0.5rem' }}>⚔️ Spiritual Arcade</h1>
-          <p style={{ color:C.muted, marginBottom:'1.5rem' }}>16 games. Dynamic questions. Go deeper into the Word.</p>
+          <h1 style={{ fontSize:'clamp(2rem,5vw,3rem)', fontWeight:'800', color:C.text, margin:'0 0 0.5rem' }}>⚔️ {t('games')}</h1>
+          <p style={{ color:C.muted, marginBottom:'1.5rem' }}>{t('gamesSubtitle')}</p>
           <div style={{ display:'flex', justifyContent:'center', gap:'1rem', flexWrap:'wrap', marginBottom:'1rem' }}>
-            <Pill label={'🔥 '+streak+' Day Streak'} color="#e67e22" />
+            <Pill label={'🔥 '+streak+' '+t('dayStreak')} color="#e67e22" />
             <Pill label={rank.icon+' '+rank.title}   color={rank.color} />
             <Pill label={'⭐ '+xp+' XP'}             color="#f0c040" />
           </div>
@@ -688,21 +691,21 @@ export default function GamesPage() {
               <div style={{ height:'8px', background:C.border, borderRadius:'999px', overflow:'hidden' }}>
                 <div style={{ height:'100%', width:(xp/rank.next*100)+'%', background:rank.color, borderRadius:'999px', transition:'width 0.6s ease' }} />
               </div>
-              <p style={{ color:C.muted, fontSize:'0.75rem', marginTop:'0.3rem', fontFamily:'Georgia,serif' }}>{rank.next-xp} XP to next rank</p>
+              <p style={{ color:C.muted, fontSize:'0.75rem', marginTop:'0.3rem', fontFamily:'Georgia,serif' }}>{rank.next-xp} {t('xpToNextRank')}</p>
             </div>
           )}
         </div>
 
         {xpFlash && (
           <div style={{ position:'fixed', top:'5rem', right:'1.5rem', zIndex:9999, background:'linear-gradient(135deg,#7b4fcf,#5a2fa0)', color:'#fff', borderRadius:'12px', padding:'0.75rem 1.25rem', fontWeight:'800', fontFamily:'Georgia,serif', boxShadow:'0 8px 32px rgba(123,79,207,0.5)' }}>
-            ⭐ +{xpFlash} XP earned!
+            ⭐ +{xpFlash} {t('xpEarned')}
           </div>
         )}
 
         <div style={{ display:'flex', gap:'0.5rem', flexWrap:'wrap', marginBottom:'1.75rem', justifyContent:'center' }}>
           {CATS.map(c => (
             <button key={c.id} onClick={() => setCat(c.id)} style={{ background:cat===c.id?'linear-gradient(135deg,#7b4fcf,#5a2fa0)':'transparent', color:cat===c.id?'#fff':C.muted, border:'1px solid '+C.border, borderRadius:'999px', padding:'0.45rem 1.1rem', fontWeight:'700', fontSize:'0.85rem', cursor:'pointer', fontFamily:'Georgia,serif' }}>
-              {c.icon} {c.label}
+              {c.icon} {t(c.labelKey)}
             </button>
           ))}
         </div>
@@ -717,7 +720,7 @@ export default function GamesPage() {
               <h3 style={{ color:C.text, margin:'0 0 0.4rem', fontSize:'1rem', fontWeight:'800' }}>{g.title}</h3>
               <p style={{ color:C.muted, fontSize:'0.85rem', margin:'0 0 0.75rem', lineHeight:'1.6' }}>{g.desc}</p>
               <div style={{ display:'flex', justifyContent:'space-between' }}>
-                <span style={{ color:C.purple, fontWeight:'700', fontSize:'0.85rem' }}>Choose Rank →</span>
+                <span style={{ color:C.purple, fontWeight:'700', fontSize:'0.85rem' }}>{t('playNow')} →</span>
                 <span style={{ color:C.gold, fontWeight:'700', fontSize:'0.8rem' }}>+{g.xp} XP</span>
               </div>
             </div>
@@ -725,9 +728,9 @@ export default function GamesPage() {
         </div>
 
         <div style={{ background:C.card, border:'1px solid '+C.border, borderRadius:'20px', padding:'1.75rem' }}>
-          <h2 style={{ color:C.gold, fontFamily:'Georgia,serif', margin:'0 0 1rem' }}>🏆 Hall of Fame</h2>
+          <h2 style={{ color:C.gold, fontFamily:'Georgia,serif', margin:'0 0 1rem' }}>🏆 {t('hallOfFame')}</h2>
           {hall.length === 0
-            ? <p style={{ color:C.muted, fontStyle:'italic' }}>Complete a game to appear here!</p>
+            ? <p style={{ color:C.muted, fontStyle:'italic' }}>{t('completeGame')}</p>
             : hall.map((h, i) => (
                 <div key={i} style={{ display:'flex', gap:'1rem', padding:'0.5rem 0', borderBottom:'1px solid '+C.border, fontFamily:'Georgia,serif' }}>
                   <span>{i===0?'🥇':i===1?'🥈':i===2?'🥉':'▪️'}</span>
@@ -747,10 +750,10 @@ export default function GamesPage() {
 function Pill({ label, color }) {
   return <span style={{ background:color+'22', border:'1px solid '+color+'55', borderRadius:'999px', padding:'0.4rem 1rem', color, fontWeight:'800', fontSize:'0.88rem', fontFamily:'Georgia,serif' }}>{label}</span>
 }
-function Shell({ title, icon, C, onBack, children }) {
+function Shell({ title, icon, C, onBack, children, t }) {
   return (
     <div style={{ maxWidth:'780px', margin:'0 auto' }}>
-      <button onClick={onBack} style={{ background:'none', border:'none', color:C.purple, fontWeight:'700', cursor:'pointer', fontFamily:'Georgia,serif', marginBottom:'1.5rem', fontSize:'0.95rem' }}>← Back to Arcade</button>
+      <button onClick={onBack} style={{ background:'none', border:'none', color:C.purple, fontWeight:'700', cursor:'pointer', fontFamily:'Georgia,serif', marginBottom:'1.5rem', fontSize:'0.95rem' }}>← {t ? t('backToArcade') : 'Back to Arcade'}</button>
       <h2 style={{ color:C.text, fontFamily:'Georgia,serif', margin:'0 0 1.5rem', fontSize:'clamp(1.4rem,3vw,2rem)', fontWeight:'800' }}>{icon} {title}</h2>
       {children}
     </div>
@@ -908,7 +911,7 @@ function SpeedTyper({ C, onBack, onWin }) {
   const accuracy = typed.length === 0 ? 100 : Math.round(typed.split('').filter((c,i) => c===verse.text[i]).length / typed.length * 100)
 
   return (
-    <Shell title="Speed Typer" icon="⌨️" C={C} onBack={onBack}>
+    <Shell title="Speed Typer" icon="⌨️" C={C} onBack={onBack} t={t}>
       <VoiceGuide gameId="speedtyper" C={C} />
       <Card C={C}>
         <p style={{ color:C.purple, fontSize:'0.78rem', fontWeight:'700', textTransform:'uppercase', margin:'0 0 0.5rem', fontFamily:'Georgia,serif' }}>{verse.ref}</p>
@@ -932,7 +935,7 @@ function SpeedTyper({ C, onBack, onWin }) {
                   Next Verse →
                 </button>
               )}
-              <Btn onClick={() => onWin('speedtyper', 50, verse.ref+' — '+wpm+' WPM')} C={C}>Claim +50 XP</Btn>
+              <Btn onClick={() => onWin('speedtyper', 50, verse.ref+' — '+wpm+' WPM')} C={C}>{t('claim')} +50 XP</Btn>
             </div>
           </div>
         )}
@@ -970,7 +973,7 @@ function SwipeGame({ C, onBack, onWin, xp }) {
   }
 
   if (done) return (
-    <Shell title="Swipe True/False" icon="👆" C={C} onBack={onBack}>
+    <Shell title="Swipe True/False" icon="👆" C={C} onBack={onBack} t={t}>
       <Card C={C} style={{ textAlign:'center' }}>
         <p style={{ fontSize:'3rem', margin:'0 0 1rem' }}>🎉</p>
         <p style={{ color:C.text, fontFamily:'Georgia,serif', fontSize:'1.3rem', fontWeight:'800', marginBottom:'1rem' }}>{score}/{questions.length} Correct!</p>
@@ -985,7 +988,7 @@ function SwipeGame({ C, onBack, onWin, xp }) {
       <VoiceGuide gameId="swipe" C={C} />
       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'1rem' }}>
         <span style={{ color:C.muted, fontFamily:'Georgia,serif' }}>{idx+1}/{questions.length} <DiffBadge d={q.d} /></span>
-        <span style={{ color:C.purple, fontWeight:'800', fontFamily:'Georgia,serif' }}>Score: {score}</span>
+        <span style={{ color:C.purple, fontWeight:'800', fontFamily:'Georgia,serif' }}>{t('score')}: {score}</span>
       </div>
       <Card C={C} style={{ textAlign:'center', marginBottom:'1.5rem', background:result===true?'rgba(39,174,96,0.15)':result===false?'rgba(231,76,60,0.12)':C.card, border:'2px solid '+(result===true?'#27ae60':result===false?'#e74c3c':C.border) }}>
         <p style={{ color:C.text, fontSize:'1.2rem', fontWeight:'700', fontFamily:'Georgia,serif', margin:0 }}>{q.q}</p>
@@ -1023,7 +1026,7 @@ function FillBlank({ C, onBack, onWin, xp, selectedRank }) {
       <VoiceGuide gameId="fillblank" C={C} />
       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'1rem' }}>
         <span style={{ color:C.muted, fontFamily:'Georgia,serif' }}>{idx+1}/{questions.length} <DiffBadge d={q.d} /></span>
-        <span style={{ color:C.purple, fontWeight:'800', fontFamily:'Georgia,serif' }}>Score: {score}</span>
+        <span style={{ color:C.purple, fontWeight:'800', fontFamily:'Georgia,serif' }}>{t('score')}: {score}</span>
       </div>
       <Card C={C} style={{ marginBottom:'1.25rem' }}>
         <p style={{ color:C.purple, fontSize:'0.78rem', fontWeight:'700', textTransform:'uppercase', margin:'0 0 0.5rem', fontFamily:'Georgia,serif' }}>{q.ref}</p>
@@ -1041,7 +1044,7 @@ function FillBlank({ C, onBack, onWin, xp, selectedRank }) {
       {chosen && (
         <div style={{ textAlign:'center' }}>
           <p style={{ color:chosen===q.answer?'#27ae60':'#e74c3c', fontWeight:'800', fontFamily:'Georgia,serif', marginBottom:'1rem' }}>{chosen===q.answer?'✅ Correct!':'❌ Not quite — it was '+q.answer}</p>
-          <Btn onClick={next} C={C}>{idx+1>=questions.length?'Finish & Claim XP':'Next →'}</Btn>
+          <Btn onClick={next} C={C}>{idx+1>=questions.length?t('finishClaim'):'Next →'}</Btn>
         </div>
       )}
     </Shell>
@@ -1090,7 +1093,7 @@ function WhoAmI({ C, onBack, onWin, xp, selectedRank }) {
       {chosen && (
         <div style={{ textAlign:'center' }}>
           <p style={{ color:chosen===q.answer?'#27ae60':'#e74c3c', fontWeight:'800', fontFamily:'Georgia,serif', marginBottom:'1rem' }}>{chosen===q.answer?'✅ Correct! I am '+q.answer+'!':'❌ The answer was '+q.answer}</p>
-          <Btn onClick={next} C={C}>{idx+1>=questions.length?'Finish & Claim XP':'Next →'}</Btn>
+          <Btn onClick={next} C={C}>{idx+1>=questions.length?t('finishClaim'):'Next →'}</Btn>
         </div>
       )}
     </Shell>
@@ -1300,7 +1303,7 @@ function Wordle({ C, onBack, onWin }) {
         </div>
       )}
       {msg && <p style={{ color:over&&!won?'#e74c3c':'#27ae60', fontFamily:'Georgia,serif', fontWeight:'700', textAlign:'center', marginTop:'1rem' }}>{msg}</p>}
-      {over && <div style={{ textAlign:'center', marginTop:'1rem' }}><Btn onClick={() => onWin('wordle', won?70:20, target.word)} C={C}>Claim XP</Btn></div>}
+      {over && <div style={{ textAlign:'center', marginTop:'1rem' }}><Btn onClick={() => onWin('wordle', won?70:20, target.word)} C={C}>{t('claimXP')}</Btn></div>}
     </Shell>
   )
 }
@@ -1375,7 +1378,7 @@ function Hangman({ C, onBack, onWin }) {
       {done && (
         <div style={{ textAlign:'center' }}>
           <p style={{ color:won?'#27ae60':'#e74c3c', fontWeight:'800', fontSize:'1.2rem', fontFamily:'Georgia,serif', marginBottom:'1rem' }}>{won?'✅ Correct! The word was '+word+'!':'❌ The word was '+word}</p>
-          <Btn onClick={() => onWin('hangman', won?30:5, word)} C={C}>Claim XP</Btn>
+          <Btn onClick={() => onWin('hangman', won?30:5, word)} C={C}>{t('claimXP')}</Btn>
         </div>
       )}
     </Shell>

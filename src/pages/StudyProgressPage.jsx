@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useProgress } from '../hooks/useProgress'
+import { useLanguage } from '../context/LanguageContext.jsx'
 import { speakPageGuide, stopVoiceGuide } from '../hooks/useVoiceGuide'
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -537,6 +538,7 @@ const TipOfTheDay = () => {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function StudyProgressPage({ onNavigate }) {
   const { progress, reset } = useProgress()
+  const { t } = useLanguage()
   const [activeTab, setActiveTab]       = useState('overview')
   const [confirmReset, setConfirmReset] = useState(false)
   const [showTour, setShowTour]         = useState(false)
@@ -556,12 +558,12 @@ export default function StudyProgressPage({ onNavigate }) {
     }
   }, [])
 
-  const tabs = [
-    { id: 'overview', label: '📊 Overview' },
-    { id: 'quizzes',  label: '🏆 Quizzes'  },
-    { id: 'secrets',  label: '🔍 Secrets'  },
-    { id: 'chapters', label: '📖 Chapters' },
-    { id: 'guide',    label: '🗺️ Guide'    },
+    const tabs = [
+    { id: 'overview', label: `📊 ${t('studyProgress')}` },
+    { id: 'quizzes',  label: `🏆 ${t('quizzes')}`       },
+    { id: 'secrets',  label: `🔍 ${t('biblicalSecrets')}` },
+    { id: 'chapters', label: `📖 ${t('bible')}`          },
+    { id: 'guide',    label: `🗺️ ${t('guidance')}`       },
   ]
 
   const overallPct = Math.round(
@@ -607,7 +609,7 @@ export default function StudyProgressPage({ onNavigate }) {
             margin: '0 0 0.25rem',
             textShadow: '0 2px 8px rgba(240,192,64,0.4)',
           }}>
-            Your Study Progress
+            {t('studyProgress')}
           </h1>
           <p style={{ color: '#c8a96e', fontSize: '0.95rem', margin: 0 }}>
             Your journey through Scripture — tracked automatically as you explore.

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { useLanguage } from '../context/LanguageContext.jsx'
 
 // ─── CONFIGURATION ───────────────────────────────────────────────
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY
@@ -57,6 +58,7 @@ const SpeakButton = ({ text, isSpeaking, onSpeak, onStop }) => (
 
 // ─── MAIN PAGE ───────────────────────────────────────────────────
 export default function AIAdvicePage() {
+  const { t } = useLanguage()
   const [messages, setMessages] = useState([
     {
       role:    'assistant',
@@ -361,7 +363,7 @@ export default function AIAdvicePage() {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isListening ? '🔴 Recording… press ⏹ to stop' : 'Speak your heart…'}
+            placeholder={isListening ? '🔴 Recording… press ⏹ to stop' : t('askQuestion')}
             style={{
               flex:         1,
               background:   'rgba(255,255,255,0.06)',
@@ -394,8 +396,8 @@ export default function AIAdvicePage() {
               fontSize:     '0.95rem',
               transition:   'background 0.2s',
             }}
-          >
-            Send 🙏
+           >
+            {t('send')} 🙏
           </button>
         </div>
 
