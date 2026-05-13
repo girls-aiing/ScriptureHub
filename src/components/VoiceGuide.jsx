@@ -15,6 +15,12 @@ const SCRIPTS = {
   '/games':        `Welcome to the Spiritual Arcade — where faith meets fun! Here you will find sixteen interactive games designed to strengthen your knowledge of scripture. Choose any game to begin. Every game is rooted in the Word of God. May you grow in wisdom as you play!`,
   '/community':    `Welcome to the ScriptureHub Community. Here you can carve your own stone of remembrance by sharing a verse or testimony that has touched your heart. You can also earn treasure chest badges, walk the Prophet's Path, and discover hidden Easter eggs filled with ancient wisdom.`,
   '/settings':     `Welcome to Settings. Here you can personalise your entire ScriptureHub experience. Choose your preferred language, adjust the appearance, set your daily reading goal, and manage all your account data.`,
+  '/secrets':      `Welcome to Biblical Secrets — the Discovery page of ScriptureHub. Here you will find sixty fascinating secrets hidden within the pages of Scripture. Each card holds a surprising question on the front. Tap any card to flip it and reveal the secret answer. You will discover amazing facts about Bible words and language, numbers and records, famous people, creation, the life of Jesus, prophecy and fulfilment, strange and surprising events, Africa in the Bible, and wisdom from Proverbs. Use the category buttons to explore a specific topic, or use the search bar to find a secret by keyword. You can also press Reveal All to uncover every secret at once, or copy any secret to share with friends and family. Track your progress at the top of the page. May every secret deepen your love for the Word of God.`,
+  '/values':       `Welcome to Values for Success — the Youth Hub of ScriptureHub. Here you will find nine powerful life values, each one combining specific Bible scriptures with practical real-world advice. Whether you want to learn about diligence, integrity, entrepreneurship, money management, or leadership, every value has scriptures to inspire you and practical tips to guide you. This section was built especially for young people in communities like Ogbia who want to grow spiritually and succeed practically. Select any value card to explore its scriptures and tips. May God's Word light your path to success.`,
+  '/maps':         `Welcome to Bible Maps and Timelines — where the stories of Scripture come alive geographically and historically. Choose from four interactive maps: the Travels of Paul, tracing his three missionary journeys across the Roman Empire; the Exodus Route, following Moses and Israel from Egypt to the Promised Land; the Life and Ministry of Jesus, exploring every significant location in the Gospels; and the Kingdom of Israel and Judah, showing the divided kingdom and the path to exile. Each map has clickable location pins that reveal the biblical story behind every city. You can also filter by journey or route, and switch to the Timelines view to see all of Bible history laid out in order. May this feature make the Word of God feel more real and alive to you.`,
+  '/search':       `Welcome to AI Deep Search — the most powerful way to find scripture on ScriptureHub. This is not a normal search bar. You do not need to know any Bible verses or references. Simply type how you feel or what you are going through. You could type something like "I feel lonely and need strength," or "I am anxious about the future," or "How should I treat my neighbours." The AI will understand the meaning behind your words and find the most relevant Bible verses for your exact situation. It will also give you a personal, pastoral insight explaining how God's Word speaks to what you are facing. Your search history is saved privately on this device so you can return to previous searches. Use the suggestion chips on screen to get started quickly, or type your own search in the box. God's Word has an answer for every season of life — let us help you find it.`,
+  '/prayer':       `Welcome to your Digital Prayer Journal — a private, sacred space between you and God. Here you can write down your prayer requests, organise them by category such as personal, family, health, provision, or guidance, and track them over time. When God answers a prayer, press the Mark as Answered button and add a note about how He answered it. Over weeks and months, your list of answered prayers becomes one of the most powerful faith-building tools you will ever have. Your journal is stored privately on this device only — no one else can read it. Use the tabs at the top to switch between your active prayers, your answered prayers, and all prayers. You can also view your prayer statistics to see your answer rate and how long God typically takes to respond. Start by pressing the New Prayer Request button. God is listening.`,
+  '/progress':     `Welcome to your Study Progress page. Here you can track your Bible reading journey, see which books you have completed, and set daily reading goals. Every chapter you read is a step closer to knowing the full counsel of God's Word.`,
   '/games/speedtyper':  `Welcome to Speed Typer! A Bible verse will appear on screen. Type it out as fast and accurately as you can. Your words per minute and accuracy will both be tracked. The faster and more accurate you type, the better your score. Take a deep breath and begin when you are ready!`,
   '/games/swipe':       `Welcome to Swipe True or False! I will show you a Bible statement one at a time. Press the TRUE button if the statement is correct, or the FALSE button if it is wrong. You have ten questions in total. Trust what you know from the Word and go with your heart!`,
   '/games/fillblank':   `Welcome to Fill the Blank! Each question shows you a Bible verse with one missing word. Choose the correct word from the four options given. The scripture reference is shown at the top to help guide you. May the Word of God be hidden in your heart!`,
@@ -33,9 +39,7 @@ const SCRIPTS = {
   '/games/swordDrill':  `Welcome to Sword Drill! I will show you a Bible verse on screen. Your challenge is to type the correct book, chapter, and verse reference as fast as you can before the thirty second timer runs out. The Word of God is your sword — draw it quickly and accurately!`,
 }
 
-// ── Virtual sub-page scripts fired via custom events ──────────────
-// BibleReaderPage dispatches  window.dispatchEvent(new CustomEvent('vg:subpage', { detail: 'hymns' }))
-// when the user navigates into the hymn centre, hymn detail, or singing mode.
+// ── Virtual sub-page scripts ──────────────────────────────────────
 const SUBPAGE_SCRIPTS = {
   'hymns':        SCRIPTS['/bible/hymns'],
   'hymn-detail':  SCRIPTS['/bible/hymn-detail'],
@@ -44,16 +48,22 @@ const SUBPAGE_SCRIPTS = {
 }
 
 const PAGE_NAMES = {
-  '/':             'Home',
-  '/bible':        'Bible Reader',
-  '/bible/hymns':  'Hymn Centre',
+  '/':                  'Home',
+  '/bible':             'Bible Reader',
+  '/bible/hymns':       'Hymn Centre',
   '/bible/hymn-detail': 'Hymn Detail',
-  '/quizzes':      'Knowledge Hub',
-  '/ai':           'AI Consultant',
-  '/did-you-know': 'Did You Know',
-  '/games':        'Bible Games',
-  '/community':    'Community',
-  '/settings':     'Settings',
+  '/quizzes':           'Knowledge Hub',
+  '/ai':                'AI Consultant',
+  '/did-you-know':      'Did You Know',
+  '/games':             'Bible Games',
+  '/community':         'Community',
+  '/settings':          'Settings',
+  '/secrets':           '🔍 Biblical Secrets',
+  '/values':            'Values for Success',
+  '/maps':              '🗺️ Bible Maps',
+  '/search':            '🔍 AI Deep Search',
+  '/prayer':            '🙏 Prayer Journal',
+  '/progress':          '📊 Study Progress',
   '/games/speedtyper':  '⌨️ Speed Typer',
   '/games/swipe':       '👆 Swipe True/False',
   '/games/fillblank':   '📝 Fill the Blank',
@@ -134,11 +144,7 @@ function splitIntoChunks(text, maxChars = 180) {
   return chunks
 }
 
-const engine = {
-  queue:     [],
-  keepAlive: null,
-  stopped:   false,
-}
+const engine = { queue: [], keepAlive: null, stopped: false }
 
 function clearEngine() {
   engine.stopped = true
@@ -157,13 +163,10 @@ function speakChunk(idx, onAllDone) {
   const utter = new SpeechSynthesisUtterance(text)
   const voice = getBestVoice()
   if (voice) utter.voice = voice
-  utter.rate   = 0.88
-  utter.pitch  = 1.0
-  utter.volume = getVol()
-
-  utter.onend = () => {
-    if (!engine.stopped) speakChunk(idx + 1, onAllDone)
-  }
+  utter.rate    = 0.88
+  utter.pitch   = 1.0
+  utter.volume  = getVol()
+  utter.onend   = () => { if (!engine.stopped) speakChunk(idx + 1, onAllDone) }
   utter.onerror = (e) => {
     if (e.error === 'interrupted' || engine.stopped) return
     setTimeout(() => { if (!engine.stopped) speakChunk(idx + 1, onAllDone) }, 300)
@@ -175,11 +178,9 @@ function doSpeak(text, onDone) {
   if (!('speechSynthesis' in window)) return
   if (isMuted() || !isEnabled()) return
   if (!text) return
-
   clearEngine()
   engine.stopped = false
   engine.queue   = splitIntoChunks(text)
-
   const startWhenReady = () => {
     if (window.speechSynthesis.getVoices().length > 0) {
       speakChunk(0, onDone)
@@ -206,14 +207,6 @@ function doSpeakPath(path, onDone) {
 export function speakText(text)        { doSpeak(text) }
 export function stopVoiceGuide()       { clearEngine() }
 export function replayVoiceGuide(path) { doSpeakPath(path) }
-
-// ── NEW: called by BibleReaderPage when view changes ──────────────
-// Usage in BibleReaderPage:
-//   import { announceHymnView } from '../components/VoiceGuide'
-//   announceHymnView('hymns')          // entering hymn list
-//   announceHymnView('hymn-detail')    // opening a hymn
-//   announceHymnView('singing-mode')   // entering singing mode
-//   announceHymnView('books')          // returning to Bible books
 export function announceHymnView(subpage) {
   const text = SUBPAGE_SCRIPTS[subpage]
   if (text) doSpeak(text)
@@ -241,12 +234,7 @@ function tryAutoUnlock(onUnlocked) {
   const silent = new SpeechSynthesisUtterance(' ')
   silent.volume = 0
   let resolved  = false
-
-  silent.onend = () => {
-    if (resolved) return
-    resolved = true
-    onUnlocked()
-  }
+  silent.onend = () => { if (resolved) return; resolved = true; onUnlocked() }
   silent.onerror = () => {
     if (resolved) return
     const handler = () => {
@@ -263,10 +251,8 @@ function tryAutoUnlock(onUnlocked) {
     document.addEventListener('touchend', handler, { once: true })
     document.addEventListener('scroll',   handler, { once: true })
   }
-  try {
-    window.speechSynthesis.cancel()
-    window.speechSynthesis.speak(silent)
-  } catch { silent.onerror() }
+  try { window.speechSynthesis.cancel(); window.speechSynthesis.speak(silent) }
+  catch { silent.onerror() }
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -281,9 +267,8 @@ export default function VoiceGuide() {
   const [volume,       setVolume]       = useState(() => getVol())
   const [showPanel,    setShowPanel]    = useState(false)
   const [unlocked,     setUnlocked]     = useState(false)
-  const [currentLabel, setCurrentLabel] = useState('')   // shown in the card
+  const [currentLabel, setCurrentLabel] = useState('')
 
-  // ── Drag state ──────────────────────────────────────────────────
   const [pos,      setPos]      = useState(() => getSavedPos())
   const [dragging, setDragging] = useState(false)
   const dragStart  = useRef(null)
@@ -291,16 +276,14 @@ export default function VoiceGuide() {
   const prevPath   = useRef('')
   const pollRef    = useRef(null)
   const hideRef    = useRef(null)
-  const replayText = useRef('')   // stores last spoken text for replay
+  const replayText = useRef('')
 
   if (!('speechSynthesis' in window)) return null
 
-  // ── Save position ───────────────────────────────────────────────
   useEffect(() => {
     localStorage.setItem('scripturehub_vg_pos', JSON.stringify(pos))
   }, [pos])
 
-  // ── Keep widget inside window on resize ─────────────────────────
   useEffect(() => {
     function onResize() {
       setPos(p => ({
@@ -312,9 +295,6 @@ export default function VoiceGuide() {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  // ── Listen for hymn sub-page events from BibleReaderPage ─────────
-  // BibleReaderPage fires:
-  //   window.dispatchEvent(new CustomEvent('vg:subpage', { detail: 'hymns' }))
   useEffect(() => {
     function onSubpage(e) {
       const subpage = e.detail
@@ -324,15 +304,12 @@ export default function VoiceGuide() {
       if (isMuted() || !isEnabled()) return
       replayText.current = text
       setCurrentLabel(label)
-      if (unlocked) {
-        setTimeout(() => doSpeak(text), 400)
-      }
+      if (unlocked) setTimeout(() => doSpeak(text), 400)
     }
     window.addEventListener('vg:subpage', onSubpage)
     return () => window.removeEventListener('vg:subpage', onSubpage)
   }, [unlocked])
 
-  // ── Mouse drag ──────────────────────────────────────────────────
   function onMouseDown(e) {
     if (e.target.closest('button') || e.target.closest('input')) return
     e.preventDefault()
@@ -342,11 +319,9 @@ export default function VoiceGuide() {
   useEffect(() => {
     function onMouseMove(e) {
       if (!dragStart.current) return
-      const dx = e.clientX - dragStart.current.mx
-      const dy = e.clientY - dragStart.current.my
       setPos({
-        x: Math.max(0, Math.min(window.innerWidth  - 60, dragStart.current.ox + dx)),
-        y: Math.max(0, Math.min(window.innerHeight - 60, dragStart.current.oy + dy)),
+        x: Math.max(0, Math.min(window.innerWidth  - 60, dragStart.current.ox + (e.clientX - dragStart.current.mx))),
+        y: Math.max(0, Math.min(window.innerHeight - 60, dragStart.current.oy + (e.clientY - dragStart.current.my))),
       })
     }
     function onMouseUp() { dragStart.current = null; setDragging(false) }
@@ -358,7 +333,6 @@ export default function VoiceGuide() {
     }
   }, [])
 
-  // ── Touch drag ──────────────────────────────────────────────────
   function onTouchStart(e) {
     if (e.target.closest('button') || e.target.closest('input')) return
     const t = e.touches[0]
@@ -384,11 +358,9 @@ export default function VoiceGuide() {
     }
   }, [])
 
-  // ── AUTO-PLAY on first mount ─────────────────────────────────────
   useEffect(() => {
     const initialPath = location.pathname
     prevPath.current  = initialPath
-
     tryAutoUnlock(() => {
       setUnlocked(true)
       if (!isMuted() && isEnabled()) {
@@ -404,7 +376,6 @@ export default function VoiceGuide() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ── Speak on route change ────────────────────────────────────────
   useEffect(() => {
     const path = location.pathname
     if (path === prevPath.current) return
@@ -415,12 +386,9 @@ export default function VoiceGuide() {
     if (!text) return
     replayText.current = text
     setCurrentLabel(PAGE_NAMES[path] || 'ScriptureHub')
-    if (unlocked) {
-      setTimeout(() => doSpeak(text), 600)
-    }
+    if (unlocked) setTimeout(() => doSpeak(text), 600)
   }, [location.pathname, muted, unlocked])
 
-  // ── Poll speech synthesis state for UI ──────────────────────────
   useEffect(() => {
     pollRef.current = setInterval(() => {
       setSpeaking(window.speechSynthesis.speaking && !window.speechSynthesis.paused)
@@ -429,7 +397,6 @@ export default function VoiceGuide() {
     return () => clearInterval(pollRef.current)
   }, [])
 
-  // ── Cleanup on unmount ───────────────────────────────────────────
   useEffect(() => {
     return () => {
       clearEngine()
@@ -438,7 +405,6 @@ export default function VoiceGuide() {
     }
   }, [])
 
-  // ── Controls ─────────────────────────────────────────────────────
   function toggleMute() {
     const next = !muted
     setMuted(next)
@@ -455,17 +421,14 @@ export default function VoiceGuide() {
   function handlePlayPause() {
     if (paused)        { window.speechSynthesis.resume(); setPaused(false) }
     else if (speaking) { window.speechSynthesis.pause();  setPaused(true)  }
-    else               {
+    else {
       if (replayText.current) doSpeak(replayText.current)
       else doSpeakPath(location.pathname)
     }
   }
 
   function handleStop() {
-    clearEngine()
-    setSpeaking(false)
-    setPaused(false)
-    setShowPanel(false)
+    clearEngine(); setSpeaking(false); setPaused(false); setShowPanel(false)
   }
 
   function handleReplay() {
@@ -474,7 +437,6 @@ export default function VoiceGuide() {
     setShowPanel(false)
   }
 
-  // ── Accent colour ────────────────────────────────────────────────
   const accent = (() => {
     try { return JSON.parse(localStorage.getItem('scripturehub_settings') ?? '{}').accentColor || '#c9a84c' }
     catch { return '#c9a84c' }
@@ -483,9 +445,6 @@ export default function VoiceGuide() {
   const pageName = currentLabel || PAGE_NAMES[location.pathname] || 'ScriptureHub'
   const isActive = speaking || paused
 
-  // ─────────────────────────────────────────────────────────────────
-  // RENDER
-  // ─────────────────────────────────────────────────────────────────
   return (
     <>
       <style>{`
@@ -528,9 +487,7 @@ export default function VoiceGuide() {
         }
         .vg-widget.dragging { cursor: grabbing !important; }
         .vg-widget.dragging * { cursor: grabbing !important; }
-        .vg-ctrl-btn {
-          transition: opacity 0.18s, transform 0.18s;
-        }
+        .vg-ctrl-btn { transition: opacity 0.18s, transform 0.18s; }
         .vg-ctrl-btn:hover { opacity: 0.85; transform: scale(1.08); }
       `}</style>
 
@@ -539,19 +496,19 @@ export default function VoiceGuide() {
         className={`vg-widget${dragging ? ' dragging' : ''}`}
         style={{ left: pos.x + 'px', top: pos.y + 'px' }}
       >
-        {/* ── Drag handle ── */}
+        {/* Drag handle */}
         <div
           className="vg-drag-handle"
           onMouseDown={onMouseDown}
           onTouchStart={onTouchStart}
           title="Drag to move"
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:'3px' }}>
             <span /><span /><span />
           </div>
         </div>
 
-        {/* ── Active speaking card ── */}
+        {/* Active speaking card */}
         {isActive && (
           <div style={{
             background:   'rgba(10,5,2,0.97)',
@@ -564,7 +521,6 @@ export default function VoiceGuide() {
             animation:    'vg-in 0.28s ease',
           }}>
             <div style={{ display:'flex', alignItems:'center', gap:'0.65rem', marginBottom:'0.8rem' }}>
-              {/* Animated waveform */}
               <div style={{ display:'flex', alignItems:'flex-end', gap:'2px', height:'20px', flexShrink:0 }}>
                 {[0.5, 0.9, 1.0, 0.7, 0.4].map((h, i) => (
                   <span key={i} style={{
@@ -585,12 +541,12 @@ export default function VoiceGuide() {
               </div>
               <div style={{ flex:1 }}>
                 <p style={{
-                  color:          accent,
-                  fontSize:       '0.66rem',
-                  fontWeight:     '800',
-                  margin:         0,
-                  textTransform:  'uppercase',
-                  letterSpacing:  '0.1em',
+                  color:         accent,
+                  fontSize:      '0.66rem',
+                  fontWeight:    '800',
+                  margin:        0,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.1em',
                 }}>
                   Voice Guide
                 </p>
@@ -599,8 +555,6 @@ export default function VoiceGuide() {
                 </p>
               </div>
             </div>
-
-            {/* Controls */}
             <div style={{ display:'flex', gap:'0.45rem', alignItems:'center' }}>
               <CtrlBtn onClick={handlePlayPause} color={accent} title={paused ? 'Resume' : 'Pause'}>
                 {paused ? '▶' : '⏸'}
@@ -624,7 +578,7 @@ export default function VoiceGuide() {
           </div>
         )}
 
-        {/* ── Hover panel (idle) ── */}
+        {/* Hover panel (idle) */}
         {showPanel && !isActive && (
           <div
             onMouseEnter={() => clearTimeout(hideRef.current)}
@@ -669,23 +623,23 @@ export default function VoiceGuide() {
               </span>
             </div>
             <button onClick={handleReplay} style={{
-              width:       '100%',
-              padding:     '0.5rem',
-              background:  accent + '22',
-              border:      `1px solid ${accent}55`,
-              borderRadius:'8px',
-              color:       accent,
-              fontSize:    '0.8rem',
-              fontWeight:  '700',
-              cursor:      'pointer',
-              fontFamily:  'Georgia,serif',
+              width:        '100%',
+              padding:      '0.5rem',
+              background:   accent + '22',
+              border:       `1px solid ${accent}55`,
+              borderRadius: '8px',
+              color:        accent,
+              fontSize:     '0.8rem',
+              fontWeight:   '700',
+              cursor:       'pointer',
+              fontFamily:   'Georgia,serif',
             }}>
               🔁 Replay This Page
             </button>
           </div>
         )}
 
-        {/* ── Mute / status pill ── */}
+        {/* Mute / status pill */}
         <button
           onClick={toggleMute}
           onMouseEnter={() => { clearTimeout(hideRef.current); if (!isActive) setShowPanel(true) }}
@@ -710,17 +664,16 @@ export default function VoiceGuide() {
           }}
         >
           <span style={{
-            display:    'inline-block',
-            width:      '6px',
-            height:     '6px',
-            borderRadius:'50%',
-            background: muted ? '#e74c3c' : (speaking ? accent : `${accent}88`),
-            boxShadow:  speaking && !muted ? `0 0 6px ${accent}` : 'none',
-            transition: 'all 0.3s',
+            display:      'inline-block',
+            width:        '6px',
+            height:       '6px',
+            borderRadius: '50%',
+            background:   muted ? '#e74c3c' : (speaking ? accent : `${accent}88`),
+            boxShadow:    speaking && !muted ? `0 0 6px ${accent}` : 'none',
+            transition:   'all 0.3s',
           }} />
           {muted ? 'VOICE OFF' : speaking ? 'PLAYING' : paused ? 'PAUSED' : 'VOICE ON'}
         </button>
-
       </div>
     </>
   )
@@ -736,19 +689,19 @@ function CtrlBtn({ onClick, color, title, children }) {
       title={title}
       className="vg-ctrl-btn"
       style={{
-        width:      '32px',
-        height:     '32px',
-        borderRadius:'8px',
-        flexShrink: 0,
-        background: color + '22',
-        border:     `1px solid ${color}`,
+        width:          '32px',
+        height:         '32px',
+        borderRadius:   '8px',
+        flexShrink:     0,
+        background:     color + '22',
+        border:         `1px solid ${color}`,
         color,
-        fontSize:   '0.85rem',
-        cursor:     'pointer',
-        display:    'flex',
-        alignItems: 'center',
-        justifyContent:'center',
-        fontFamily: 'Georgia,serif',
+        fontSize:       '0.85rem',
+        cursor:         'pointer',
+        display:        'flex',
+        alignItems:     'center',
+        justifyContent: 'center',
+        fontFamily:     'Georgia,serif',
       }}
     >
       {children}

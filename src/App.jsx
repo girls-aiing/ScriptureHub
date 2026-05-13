@@ -10,16 +10,21 @@ import FloatingChat   from './components/FloatingChat.jsx'
 import DarkModeToggle from './components/DarkModeToggle.jsx'
 import VoiceGuide     from './components/VoiceGuide.jsx'
 
-import HomePage          from './pages/HomePage.jsx'
-import BibleReaderPage   from './pages/BibleReaderPage.jsx'
-import KnowledgeHubPage  from './pages/KnowledgeHubPage.jsx'
-import AIAdvicePage      from './pages/AIAdvicePage.jsx'
-import DidYouKnowPage    from './pages/DidYouKnowPage.jsx'
-import GamesPage         from './pages/GamesPage.jsx'
-import CommunityPage     from './pages/CommunityPage.jsx'
-import SettingsPage      from './pages/SettingsPage.jsx'
-import NotFoundPage      from './pages/NotFoundPage.jsx'
-import StudyProgressPage from './pages/StudyProgressPage.jsx'
+import HomePage             from './pages/HomePage.jsx'
+import BibleReaderPage      from './pages/BibleReaderPage.jsx'
+import KnowledgeHubPage     from './pages/KnowledgeHubPage.jsx'
+import AIAdvicePage         from './pages/AIAdvicePage.jsx'
+import DidYouKnowPage       from './pages/DidYouKnowPage.jsx'
+import GamesPage            from './pages/GamesPage.jsx'
+import CommunityPage        from './pages/CommunityPage.jsx'
+import SettingsPage         from './pages/SettingsPage.jsx'
+import NotFoundPage         from './pages/NotFoundPage.jsx'
+import StudyProgressPage    from './pages/StudyProgressPage.jsx'
+import ValuesHubPage        from './pages/ValuesHubPage.jsx'
+import BiblicalSecretsPage  from './pages/BiblicalSecretsPage.jsx'
+import PrayerJournalPage    from './pages/PrayerJournalPage.jsx'
+import BibleMapsPage        from './pages/BibleMapsPage.jsx'
+import DeepSearchPage       from './pages/DeepSearchPage.jsx'
 
 // Pages where the floating chat should be hidden
 const HIDDEN_CHAT_PATHS = ['/ai']
@@ -49,6 +54,11 @@ function AppShell() {
           <Route path="/community"    element={<CommunityPage />} />
           <Route path="/settings"     element={<SettingsPage />} />
           <Route path="/progress"     element={<StudyProgressPage />} />
+          <Route path="/values"       element={<ValuesHubPage />} />
+          <Route path="/secrets"      element={<BiblicalSecretsPage />} />
+<Route path="/prayer"       element={<PrayerJournalPage />} />
+  <Route path="/maps"         element={<BibleMapsPage />} />
+          <Route path="/search"       element={<DeepSearchPage />} />
           <Route path="*"             element={<NotFoundPage />} />
         </Routes>
       </main>
