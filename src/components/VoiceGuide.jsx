@@ -21,6 +21,22 @@ const SCRIPTS = {
   '/search':       `Welcome to AI Deep Search. Simply type how you feel or what you are going through, and the AI will find the most relevant Bible verses for your exact situation. God's Word has an answer for every season of life.`,
   '/prayer':       `Welcome to your Digital Prayer Journal — a private, sacred space between you and God. Write down your prayer requests, organise them by category, and track them over time. Your journal is stored privately on this device only.`,
   '/progress':     `Welcome to your Study Progress page. Track your Bible reading journey, see which books you have completed, and set daily reading goals. Every chapter you read is a step closer to knowing the full counsel of God's Word.`,
+  '/games/speedtyper':  `Welcome to Speed Typer! A Bible verse will appear on screen. Type it out as fast and accurately as you can. Your words per minute and accuracy will both be tracked. Take a deep breath and begin when you are ready!`,
+  '/games/swipe':       `Welcome to Swipe True or False! I will show you a Bible statement one at a time. Press True if the statement is correct, or False if it is wrong. You have ten questions in total. Trust what you know from the Word!`,
+  '/games/fillblank':   `Welcome to Fill the Blank! Each question shows you a Bible verse with one missing word. Choose the correct word from the four options given. May the Word of God be hidden in your heart!`,
+  '/games/whoami':      `Welcome to Who Am I! I will give you clues one at a time about a famous Bible character. Try to guess who it is with as few clues as possible. The fewer clues you use, the more points you earn!`,
+  '/games/lightning':   `Welcome to Lightning Round — the sixty second Bible blitz! Answer as many Bible trivia questions as you can before the timer runs out. Are you ready? Let us go!`,
+  '/games/scramble':    `Welcome to Scripture Scramble! The words of a Bible verse have been shuffled out of order. Click the words one by one in the correct order to rebuild the verse from scratch.`,
+  '/games/wordle':      `Welcome to Verse Wordle! Your challenge is to guess a five letter Bible word in six tries or fewer. Use the hint shown at the top to help you find the answer!`,
+  '/games/hangman':     `Welcome to Bible Hangman! A hidden biblical word is waiting to be discovered. Guess one letter at a time to reveal the word. You have six wrong guesses before the game ends.`,
+  '/games/prophecy':    `Welcome to Prophetic Connections! Match Old Testament prophecies to their New Testament fulfilments. Discover how God's Word connects beautifully across the centuries!`,
+  '/games/chronology':  `Welcome to Chronology Challenge! Drag and drop ten Bible events into the correct historical order from earliest to latest.`,
+  '/games/emoji':       `Welcome to Emoji Bible! A sequence of emojis represents a well known Bible story. Choose which story the emojis are describing from the four options given.`,
+  '/games/nameBook':    `Welcome to Name That Book! I will show you a verse from the Bible. Your challenge is to identify which book of the Bible that verse comes from.`,
+  '/games/wisdom':      `Welcome to Wisdom Grid — logic puzzles drawn straight from Scripture! Think carefully before choosing your answer. The fear of the Lord is the beginning of wisdom!`,
+  '/games/connections': `Welcome to Daily Connections! Find four groups of four words that each share a hidden biblical connection. Think carefully — some connections are cleverly disguised.`,
+  '/games/map':         `Welcome to Biblical Map Quest! Click on the correct spot on the ancient map to identify each sacred location I name. Learn the geography of the Holy Land!`,
+  '/games/swordDrill':  `Welcome to Sword Drill! Type the correct Bible reference as fast as you can before the thirty second timer runs out. The Word of God is your sword — draw it quickly!`,
 }
 
 const SUBPAGE_SCRIPTS = {
@@ -47,6 +63,22 @@ const PAGE_NAMES = {
   '/search':       'AI Deep Search',
   '/prayer':       'Prayer Journal',
   '/progress':     'Study Progress',
+  '/games/speedtyper':  'Speed Typer',
+  '/games/swipe':       'Swipe True/False',
+  '/games/fillblank':   'Fill the Blank',
+  '/games/whoami':      'Who Am I?',
+  '/games/lightning':   'Lightning Round',
+  '/games/scramble':    'Scripture Scramble',
+  '/games/wordle':      'Verse Wordle',
+  '/games/hangman':     'Bible Hangman',
+  '/games/prophecy':    'Prophetic Connections',
+  '/games/chronology':  'Chronology Challenge',
+  '/games/emoji':       'Emoji Bible',
+  '/games/nameBook':    'Name That Book',
+  '/games/wisdom':      'Wisdom Grid',
+  '/games/connections': 'Daily Connections',
+  '/games/map':         'Biblical Map Quest',
+  '/games/swordDrill':  'Sword Drill',
 }
 
 const SUBPAGE_NAMES = {
@@ -70,17 +102,19 @@ const PREFERRED_VOICES = [
 ]
 
 // ─────────────────────────────────────────────────────────────────
-// SINGLE GLOBAL ENGINE — only ONE utterance ever plays at a time
+// SINGLE GLOBAL ENGINE
+// Only ONE utterance ever plays at a time.
+// Every new engineSpeak() call cancels whatever is playing first.
 // ─────────────────────────────────────────────────────────────────
 const engine = {
   stopped:   true,
   queue:     [],
   chunkIdx:  0,
-  currentId: 0,   // incremented on every new speak() call — stale callbacks ignore old IDs
+  currentId: 0,
 }
 
-function getVol()    { return parseFloat(localStorage.getItem('scripturehub_voice_volume') ?? '0.85') }
-function isMuted()   { return localStorage.getItem('scripturehub_voice_muted') === 'true' }
+function getVol()  { return parseFloat(localStorage.getItem('scripturehub_voice_volume') ?? '0.85') }
+function isMuted() { return localStorage.getItem('scripturehub_voice_muted') === 'true' }
 function isEnabled() {
   try { const s = JSON.parse(localStorage.getItem('scripturehub_settings') ?? '{}'); return s.voiceGuide !== false }
   catch { return true }
@@ -113,34 +147,31 @@ function splitIntoChunks(text, maxChars = 200) {
   return chunks
 }
 
-// ── The ONLY function that starts speech ─────────────────────────
 function engineSpeak(text, onDone) {
   if (!('speechSynthesis' in window)) return
   if (!text || isMuted() || !isEnabled()) return
 
-  // Cancel anything currently playing — hard stop
+  // ── Step 1: Hard-stop whatever is currently playing ──
   engine.stopped = true
   engine.queue   = []
   try { window.speechSynthesis.cancel() } catch {}
 
-  // Small pause to let the browser fully cancel before starting new speech
+  // ── Step 2: Short gap so the browser fully processes the cancel ──
   setTimeout(() => {
-    const id = ++engine.currentId   // unique ID for this speak session
+    const id = ++engine.currentId
     engine.stopped  = false
     engine.queue    = splitIntoChunks(text)
     engine.chunkIdx = 0
 
     function speakNext() {
-      // Bail out if a newer speak() call has started, or if stopped
       if (engine.stopped || id !== engine.currentId) return
       if (engine.chunkIdx >= engine.queue.length) {
         if (onDone) onDone()
         return
       }
-
-      const chunk  = engine.queue[engine.chunkIdx]
-      const utter  = new SpeechSynthesisUtterance(chunk)
-      const voice  = getBestVoice()
+      const chunk = engine.queue[engine.chunkIdx]
+      const utter = new SpeechSynthesisUtterance(chunk)
+      const voice = getBestVoice()
       if (voice) utter.voice = voice
       utter.rate   = 0.88
       utter.pitch  = 1.0
@@ -154,13 +185,11 @@ function engineSpeak(text, onDone) {
       utter.onerror = (e) => {
         if (e.error === 'interrupted' || engine.stopped || id !== engine.currentId) return
         engine.chunkIdx++
-        setTimeout(speakNext, 200)
+        setTimeout(speakNext, 150)
       }
-
       try { window.speechSynthesis.speak(utter) } catch {}
     }
 
-    // Wait for voices to be ready before starting
     if (window.speechSynthesis.getVoices().length > 0) {
       speakNext()
     } else {
@@ -169,23 +198,24 @@ function engineSpeak(text, onDone) {
         speakNext()
       }
     }
-  }, 80)  // 80ms gap ensures browser has fully cancelled previous speech
+  }, 80)
 }
 
 function engineStop() {
   engine.stopped = true
   engine.queue   = []
-  engine.currentId++  // invalidate any in-flight callbacks
+  engine.currentId++
   try { window.speechSynthesis.cancel() } catch {}
 }
 
 // ─────────────────────────────────────────────────────────────────
-// PUBLIC EXPORTS — used by other components
+// PUBLIC EXPORTS
 // ─────────────────────────────────────────────────────────────────
-export function speakText(text)        { engineSpeak(text) }
-export function stopVoiceGuide()       { engineStop() }
+export function speakText(text) { engineSpeak(text) }
+export function stopVoiceGuide() { engineStop() }
 export function replayVoiceGuide(path) {
-  const text = SCRIPTS[path] || SCRIPTS[Object.keys(SCRIPTS).find(k => path.startsWith(k) && k !== '/') || '']
+  const text = SCRIPTS[path]
+    || SCRIPTS[Object.keys(SCRIPTS).find(k => path.startsWith(k) && k !== '/') || '']
   if (text) engineSpeak(text)
 }
 export function announceHymnView(subpage) {
@@ -208,31 +238,20 @@ function getSavedPos() {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// AUTO-PLAY BOOTSTRAP — unlocks audio on first user gesture
+// AUTO-PLAY BOOTSTRAP
 // ─────────────────────────────────────────────────────────────────
 function tryAutoUnlock(onUnlocked) {
   if (!('speechSynthesis' in window)) return
   const silent  = new SpeechSynthesisUtterance(' ')
   silent.volume = 0
   let resolved  = false
-
-  const resolve = () => {
-    if (resolved) return
-    resolved = true
-    onUnlocked()
-  }
-
+  const resolve = () => { if (resolved) return; resolved = true; onUnlocked() }
   silent.onend   = resolve
   silent.onerror = () => {
-    // Browser blocked autoplay — wait for first user interaction
-    const events = ['click', 'keydown', 'touchend', 'scroll']
-    const handler = () => {
-      events.forEach(ev => document.removeEventListener(ev, handler))
-      resolve()
-    }
+    const events  = ['click', 'keydown', 'touchend', 'scroll']
+    const handler = () => { events.forEach(ev => document.removeEventListener(ev, handler)); resolve() }
     events.forEach(ev => document.addEventListener(ev, handler, { once: true }))
   }
-
   try { window.speechSynthesis.cancel(); window.speechSynthesis.speak(silent) }
   catch { silent.onerror() }
 }
@@ -254,24 +273,41 @@ export default function VoiceGuide() {
   const [pos,      setPos]      = useState(() => getSavedPos())
   const [dragging, setDragging] = useState(false)
 
-  const dragStart    = useRef(null)
-  const widgetRef    = useRef(null)
-  const prevPath     = useRef('')
-  const pollRef      = useRef(null)
-  const hideRef      = useRef(null)
-  const replayText   = useRef('')
-  // Tracks which paths have already been spoken this session
-  // so navigating back to a page does NOT repeat the guide
-  const spokenPaths  = useRef(new Set())
+  const dragStart  = useRef(null)
+  const widgetRef  = useRef(null)
+  const prevPath   = useRef(null)   // null = not yet initialised
+  const pollRef    = useRef(null)
+  const hideRef    = useRef(null)
+  const replayText = useRef('')
+  const unlockedRef = useRef(false) // ref mirror of unlocked state for use inside closures
 
   if (!('speechSynthesis' in window)) return null
 
-  // ── Persist position ────────────────────────────────────────────
+  // ── Helper: find script for a path ──────────────────────────────
+  function getScript(path) {
+    if (SCRIPTS[path]) return SCRIPTS[path]
+    // Match longest prefix (e.g. /games/speedtyper before /games)
+    const key = Object.keys(SCRIPTS)
+      .filter(k => k !== '/' && path.startsWith(k))
+      .sort((a, b) => b.length - a.length)[0]
+    return key ? SCRIPTS[key] : null
+  }
+
+  // ── Helper: speak a page and update label ────────────────────────
+  function speakPage(path) {
+    const text = getScript(path)
+    if (!text) return
+    replayText.current = text
+    setCurrentLabel(PAGE_NAMES[path] || 'ScriptureHub')
+    engineSpeak(text)
+  }
+
+  // ── Persist position ─────────────────────────────────────────────
   useEffect(() => {
     localStorage.setItem('scripturehub_vg_pos', JSON.stringify(pos))
   }, [pos])
 
-  // ── Keep widget inside window on resize ─────────────────────────
+  // ── Keep widget inside window on resize ──────────────────────────
   useEffect(() => {
     const onResize = () => setPos(p => ({
       x: Math.min(p.x, window.innerWidth  - 60),
@@ -281,7 +317,7 @@ export default function VoiceGuide() {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  // ── Listen for subpage announcements from BibleReaderPage ───────
+  // ── Listen for subpage announcements (hymns, singing mode etc.) ──
   useEffect(() => {
     const onSubpage = (e) => {
       const subpage = e.detail
@@ -290,13 +326,13 @@ export default function VoiceGuide() {
       if (!text || isMuted() || !isEnabled()) return
       replayText.current = text
       setCurrentLabel(label)
-      if (unlocked) engineSpeak(text)
+      if (unlockedRef.current) engineSpeak(text)
     }
     window.addEventListener('vg:subpage', onSubpage)
     return () => window.removeEventListener('vg:subpage', onSubpage)
-  }, [unlocked])
+  }, [])
 
-  // ── Drag: mouse ─────────────────────────────────────────────────
+  // ── Drag: mouse ──────────────────────────────────────────────────
   function onMouseDown(e) {
     if (e.target.closest('button') || e.target.closest('input')) return
     e.preventDefault()
@@ -317,7 +353,7 @@ export default function VoiceGuide() {
     return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
   }, [])
 
-  // ── Drag: touch ─────────────────────────────────────────────────
+  // ── Drag: touch ──────────────────────────────────────────────────
   function onTouchStart(e) {
     if (e.target.closest('button') || e.target.closest('input')) return
     const t = e.touches[0]
@@ -340,51 +376,48 @@ export default function VoiceGuide() {
     return () => { window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onEnd) }
   }, [])
 
-  // ── Initial page load — unlock audio then speak ONCE ────────────
+  // ── Initial load: unlock audio, then speak current page ──────────
   useEffect(() => {
     const initialPath = location.pathname
     prevPath.current  = initialPath
 
     tryAutoUnlock(() => {
+      unlockedRef.current = true
       setUnlocked(true)
       if (isMuted() || !isEnabled()) return
-
-      const text = SCRIPTS[initialPath] ||
-        SCRIPTS[Object.keys(SCRIPTS).find(k => initialPath.startsWith(k) && k !== '/') || '']
-      if (!text) return
-
-      // Only speak if we haven't spoken this path yet this session
-      if (spokenPaths.current.has(initialPath)) return
-      spokenPaths.current.add(initialPath)
-
-      replayText.current = text
-      setCurrentLabel(PAGE_NAMES[initialPath] || 'ScriptureHub')
-      setTimeout(() => engineSpeak(text), 400)
+      // Delay slightly so the page has fully rendered
+      setTimeout(() => speakPage(initialPath), 500)
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ── Route changes — speak new page ONCE per session ─────────────
+  // ── Route change: ALWAYS stop old guide and start new one ────────
   useEffect(() => {
     const path = location.pathname
-    if (path === prevPath.current) return   // same path — do nothing
+
+    // Skip the very first render (handled by the initial load effect above)
+    if (prevPath.current === null) return
+    // Skip if the path hasn't actually changed
+    if (path === prevPath.current) return
+
     prevPath.current = path
-    if (muted || !unlocked) return
 
-    const text = SCRIPTS[path] ||
-      SCRIPTS[Object.keys(SCRIPTS).find(k => path.startsWith(k) && k !== '/') || '']
-    if (!text) return
+    // Stop the old page's guide immediately
+    engineStop()
 
-    // Only speak if we haven't spoken this path yet this session
-    if (spokenPaths.current.has(path)) return
-    spokenPaths.current.add(path)
+    if (muted || !unlockedRef.current || !isEnabled()) return
 
-    replayText.current = text
-    setCurrentLabel(PAGE_NAMES[path] || 'ScriptureHub')
-    setTimeout(() => engineSpeak(text), 500)
-  }, [location.pathname, muted, unlocked])
+    // Start the new page's guide after a short gap
+    setTimeout(() => speakPage(path), 400)
 
-  // ── Poll speech state for UI updates ────────────────────────────
+  // location.pathname is the only dependency that should trigger this
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname])
+
+  // ── Keep unlockedRef in sync with unlocked state ─────────────────
+  useEffect(() => { unlockedRef.current = unlocked }, [unlocked])
+
+  // ── Poll speech state for UI ──────────────────────────────────────
   useEffect(() => {
     pollRef.current = setInterval(() => {
       setSpeaking(window.speechSynthesis.speaking && !window.speechSynthesis.paused)
@@ -393,7 +426,7 @@ export default function VoiceGuide() {
     return () => clearInterval(pollRef.current)
   }, [])
 
-  // ── Cleanup on unmount ──────────────────────────────────────────
+  // ── Cleanup on unmount ────────────────────────────────────────────
   useEffect(() => {
     return () => {
       engineStop()
@@ -402,12 +435,16 @@ export default function VoiceGuide() {
     }
   }, [])
 
-  // ── Controls ────────────────────────────────────────────────────
+  // ── Controls ──────────────────────────────────────────────────────
   function toggleMute() {
     const next = !muted
     setMuted(next)
     localStorage.setItem('scripturehub_voice_muted', String(next))
     if (next) engineStop()
+    else {
+      // Unmuting — speak the current page immediately
+      setTimeout(() => speakPage(location.pathname), 300)
+    }
   }
 
   function handleVolume(e) {
@@ -419,11 +456,7 @@ export default function VoiceGuide() {
   function handlePlayPause() {
     if (paused)        { window.speechSynthesis.resume(); setPaused(false) }
     else if (speaking) { window.speechSynthesis.pause();  setPaused(true)  }
-    else {
-      // Replay — does NOT add to spokenPaths so manual replay always works
-      if (replayText.current) engineSpeak(replayText.current)
-      else replayVoiceGuide(location.pathname)
-    }
+    else               { if (replayText.current) engineSpeak(replayText.current) }
   }
 
   function handleStop() {
@@ -432,7 +465,7 @@ export default function VoiceGuide() {
 
   function handleReplay() {
     if (replayText.current) engineSpeak(replayText.current)
-    else replayVoiceGuide(location.pathname)
+    else speakPage(location.pathname)
     setShowPanel(false)
   }
 
@@ -443,6 +476,9 @@ export default function VoiceGuide() {
   const pageName = currentLabel || PAGE_NAMES[location.pathname] || 'ScriptureHub'
   const isActive = speaking || paused
 
+  // ─────────────────────────────────────────────────────────────────
+  // RENDER
+  // ─────────────────────────────────────────────────────────────────
   return (
     <>
       <style>{`
@@ -455,27 +491,18 @@ export default function VoiceGuide() {
           to   { opacity:1; transform:translateY(0)   scale(1);    }
         }
         .vg-widget {
-          position: fixed;
-          z-index: 9998;
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 0.45rem;
-          font-family: Georgia, serif;
-          user-select: none;
+          position: fixed; z-index: 9998;
+          display: flex; flex-direction: column;
+          align-items: flex-end; gap: 0.45rem;
+          font-family: Georgia, serif; user-select: none;
         }
         .vg-drag-handle {
-          width: 100%;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          padding: 4px 0 2px;
-          cursor: grab;
-          opacity: 0.4;
-          transition: opacity 0.2s;
+          width: 100%; display: flex; justify-content: center;
+          align-items: center; padding: 4px 0 2px;
+          cursor: grab; opacity: 0.4; transition: opacity 0.2s;
         }
         .vg-drag-handle:hover { opacity: 1; }
-        .vg-widget.dragging { cursor: grabbing !important; }
+        .vg-widget.dragging   { cursor: grabbing !important; }
         .vg-widget.dragging * { cursor: grabbing !important; }
         .vg-ctrl-btn { transition: opacity 0.18s, transform 0.18s; }
         .vg-ctrl-btn:hover { opacity: 0.85; transform: scale(1.08); }
@@ -486,7 +513,7 @@ export default function VoiceGuide() {
         className={`vg-widget${dragging ? ' dragging' : ''}`}
         style={{ left: pos.x + 'px', top: pos.y + 'px' }}
       >
-        {/* Drag handle */}
+        {/* ── Drag handle ── */}
         <div
           className="vg-drag-handle"
           onMouseDown={onMouseDown}
@@ -495,38 +522,31 @@ export default function VoiceGuide() {
         >
           <div style={{ display:'flex', flexDirection:'column', gap:'3px' }}>
             {[0,1,2].map(i => (
-              <span key={i} style={{ display:'block', width:'18px', height:'2px', background:'#c9a84c', borderRadius:'2px' }} />
+              <span key={i} style={{
+                display:'block', width:'18px', height:'2px',
+                background:'#c9a84c', borderRadius:'2px',
+              }} />
             ))}
           </div>
         </div>
 
-        {/* Active speaking card */}
+        {/* ── Active speaking card ── */}
         {isActive && (
           <div style={{
-            background:   'rgba(10,5,2,0.97)',
-            border:       `1px solid ${accent}88`,
-            borderRadius: '16px',
-            padding:      '0.9rem 1.1rem',
-            minWidth:     '260px',
-            maxWidth:     '310px',
-            boxShadow:    '0 8px 40px rgba(0,0,0,0.65)',
-            animation:    'vg-in 0.28s ease',
+            background:'rgba(10,5,2,0.97)', border:`1px solid ${accent}88`,
+            borderRadius:'16px', padding:'0.9rem 1.1rem',
+            minWidth:'260px', maxWidth:'310px',
+            boxShadow:'0 8px 40px rgba(0,0,0,0.65)', animation:'vg-in 0.28s ease',
           }}>
             <div style={{ display:'flex', alignItems:'center', gap:'0.65rem', marginBottom:'0.8rem' }}>
-              {/* Animated bars */}
               <div style={{ display:'flex', alignItems:'flex-end', gap:'2px', height:'20px', flexShrink:0 }}>
                 {[0.5, 0.9, 1.0, 0.7, 0.4].map((h, i) => (
                   <span key={i} style={{
-                    display:         'inline-block',
-                    width:           '3px',
-                    height:          `${h * 20}px`,
-                    borderRadius:    '99px',
-                    background:      accent,
-                    transformOrigin: 'bottom',
-                    animation:       speaking ? `vg-bar ${0.45 + i * 0.08}s ease-in-out infinite` : 'none',
-                    animationDelay:  `${i * 0.09}s`,
-                    opacity:         speaking ? 1 : 0.25,
-                    transition:      'opacity 0.3s',
+                    display:'inline-block', width:'3px', height:`${h * 20}px`,
+                    borderRadius:'99px', background:accent, transformOrigin:'bottom',
+                    animation: speaking ? `vg-bar ${0.45 + i * 0.08}s ease-in-out infinite` : 'none',
+                    animationDelay:`${i * 0.09}s`,
+                    opacity: speaking ? 1 : 0.25, transition:'opacity 0.3s',
                   }} />
                 ))}
               </div>
@@ -556,19 +576,16 @@ export default function VoiceGuide() {
           </div>
         )}
 
-        {/* Hover panel (idle) */}
+        {/* ── Hover panel (idle) ── */}
         {showPanel && !isActive && (
           <div
             onMouseEnter={() => clearTimeout(hideRef.current)}
             onMouseLeave={() => { hideRef.current = setTimeout(() => setShowPanel(false), 400) }}
             style={{
-              background:   'rgba(10,5,2,0.97)',
-              border:       `1px solid rgba(201,168,76,0.4)`,
-              borderRadius: '14px',
-              padding:      '0.95rem 1.1rem',
-              minWidth:     '235px',
-              boxShadow:    '0 8px 40px rgba(0,0,0,0.6)',
-              animation:    'vg-in 0.22s ease',
+              background:'rgba(10,5,2,0.97)', border:`1px solid rgba(201,168,76,0.4)`,
+              borderRadius:'14px', padding:'0.95rem 1.1rem',
+              minWidth:'235px', boxShadow:'0 8px 40px rgba(0,0,0,0.6)',
+              animation:'vg-in 0.22s ease',
             }}
           >
             <p style={{ color:accent, fontSize:'0.7rem', fontWeight:'800', margin:'0 0 0.7rem', textTransform:'uppercase', letterSpacing:'0.08em' }}>
@@ -597,28 +614,21 @@ export default function VoiceGuide() {
           </div>
         )}
 
-        {/* Mute / status pill */}
+        {/* ── Mute / status pill ── */}
         <button
           onClick={toggleMute}
           onMouseEnter={() => { clearTimeout(hideRef.current); if (!isActive) setShowPanel(true) }}
           onMouseLeave={() => { hideRef.current = setTimeout(() => setShowPanel(false), 1000) }}
           title={muted ? 'Voice Guide is muted — click to unmute' : 'Click to mute Voice Guide'}
           style={{
-            background:     'rgba(10,5,2,0.88)',
-            border:         `1px solid ${muted ? 'rgba(231,76,60,0.55)' : `${accent}44`}`,
-            borderRadius:   '999px',
-            padding:        '0.28rem 0.85rem',
-            color:          muted ? '#e74c3c' : accent,
-            fontSize:       '0.68rem',
-            fontWeight:     '800',
-            cursor:         'pointer',
-            fontFamily:     'Georgia,serif',
-            backdropFilter: 'blur(12px)',
-            letterSpacing:  '0.06em',
-            transition:     'all 0.2s',
-            display:        'flex',
-            alignItems:     'center',
-            gap:            '0.35rem',
+            background:'rgba(10,5,2,0.88)',
+            border:`1px solid ${muted ? 'rgba(231,76,60,0.55)' : `${accent}44`}`,
+            borderRadius:'999px', padding:'0.28rem 0.85rem',
+            color: muted ? '#e74c3c' : accent,
+            fontSize:'0.68rem', fontWeight:'800', cursor:'pointer',
+            fontFamily:'Georgia,serif', backdropFilter:'blur(12px)',
+            letterSpacing:'0.06em', transition:'all 0.2s',
+            display:'flex', alignItems:'center', gap:'0.35rem',
           }}
         >
           <span style={{
@@ -634,6 +644,9 @@ export default function VoiceGuide() {
   )
 }
 
+// ─────────────────────────────────────────────────────────────────
+// CTRL BUTTON
+// ─────────────────────────────────────────────────────────────────
 function CtrlBtn({ onClick, color, title, children }) {
   return (
     <button onClick={onClick} title={title} className="vg-ctrl-btn" style={{

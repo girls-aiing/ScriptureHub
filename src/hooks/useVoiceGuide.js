@@ -1,22 +1,14 @@
 // useVoiceGuide.js
-// Thin wrapper — all speech now goes through VoiceGuide.jsx's engine.
-// This file exists only so other components can import stopVoiceGuide
-// and speakPageGuide without breaking existing imports.
+// Thin re-export wrapper — all speech goes through VoiceGuide.jsx's engine.
+// This file exists so existing imports across the app don't break.
 
 import { speakText, stopVoiceGuide, announceHymnView } from '../components/VoiceGuide'
 
-// Re-export the engine controls so any file importing from here still works
 export { stopVoiceGuide }
 export { announceHymnView }
 
-// speakPageGuide — called by pages that want to trigger a voice intro.
-// The VoiceGuide component already handles page-change speech automatically,
-// so this is a no-op to prevent double-speaking.
-// If you ever need to force a manual announcement, call speakText() directly.
-export function speakPageGuide(_pathname, _userName) {
-  // Intentionally empty — VoiceGuide.jsx handles all automatic page speech.
-  // Having two systems both speak on page load was the cause of repetition.
-}
+// No-op — VoiceGuide.jsx handles all automatic page speech on route change.
+export function speakPageGuide(_pathname, _userName) {}
 
 export function speakHymnGuide(subpage) {
   announceHymnView(subpage)
@@ -42,6 +34,4 @@ export function getAvailableVoices() {
   return window.speechSynthesis?.getVoices() ?? []
 }
 
-export function clearSessionHistory() {
-  // Session history is now managed inside VoiceGuide.jsx (spokenPaths ref)
-}
+export function clearSessionHistory() {}
