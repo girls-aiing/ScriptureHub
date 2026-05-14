@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { announceHymnView } from '../components/VoiceGuide'
 import { useLanguage } from '../context/LanguageContext.jsx'
 
@@ -6,15 +7,29 @@ import { useLanguage } from '../context/LanguageContext.jsx'
 const API_KEY = 'bP7SgKnADnw5o0lKdruPfuFGE7uur_gSyVGLhnlSAK'
 const KEY_LOOKS_VALID = API_KEY.length >= 32
 
+// ── Language display names for translation ────────────────────────
+const LANG_DISPLAY = {
+  en: null,          // English — no translation needed, use API directly
+  fr: 'French',
+  es: 'Spanish',
+  pt: 'Portuguese',
+  yo: 'Yoruba',
+  ig: 'Igbo',
+  ha: 'Hausa',
+  sw: 'Swahili',
+  ar: 'Arabic',
+  zh: 'Simplified Chinese',
+}
+
 // ── 1. Translations ───────────────────────────────────────────────
 const TRANSLATIONS = [
-  { code:'kjv',   apiBibleId:'de4e12af7f28f599-02', label:'KJV',   full:'King James Version',         desc:'The classic 1611 translation, poetic and majestic.',    badge:'📜' },
-  { code:'asv',   apiBibleId:'01b29f4b342acc35-01', label:'ASV',   full:'American Standard Version',   desc:'A precise 1901 revision of the KJV.',                   badge:'📜' },
-  { code:'web',   apiBibleId:'65eec8e0b60e656b-01', label:'WEB',   full:'World English Bible',         desc:'A modern public domain translation.',                    badge:'💡' },
-  { code:'bbe',   apiBibleId:'f72b840c855f362c-04', label:'BBE',   full:'Bible in Basic English',      desc:'Simple vocabulary, easy for all readers.',               badge:'💡' },
-  { code:'ylt',   apiBibleId:null,                  label:'YLT',   full:"Young's Literal Translation", desc:'A very literal word-for-word translation from 1898.',    badge:'📖' },
-  { code:'darby', apiBibleId:null,                  label:'DARBY', full:'Darby Translation',           desc:"John Nelson Darby's 1890 scholarly translation.",        badge:'📖' },
-  { code:'dra',   apiBibleId:null,                  label:'DRA',   full:'Douay-Rheims (Catholic)',     desc:'The traditional Catholic English Bible.',                badge:'✝️' },
+  { code:'kjv',   apiBibleId:'de4e12af7f28f599-02', label:'KJV',   full:'King James Version',         desc:'The classic 1611 translation, poetic and majestic.',  badge:'📜' },
+  { code:'asv',   apiBibleId:'01b29f4b342acc35-01', label:'ASV',   full:'American Standard Version',   desc:'A precise 1901 revision of the KJV.',                 badge:'📜' },
+  { code:'web',   apiBibleId:'65eec8e0b60e656b-01', label:'WEB',   full:'World English Bible',         desc:'A modern public domain translation.',                  badge:'💡' },
+  { code:'bbe',   apiBibleId:'f72b840c855f362c-04', label:'BBE',   full:'Bible in Basic English',      desc:'Simple vocabulary, easy for all readers.',             badge:'💡' },
+  { code:'ylt',   apiBibleId:null,                  label:'YLT',   full:"Young's Literal Translation", desc:'A very literal word-for-word translation from 1898.', badge:'📖' },
+  { code:'darby', apiBibleId:null,                  label:'DARBY', full:'Darby Translation',           desc:"John Nelson Darby's 1890 scholarly translation.",      badge:'📖' },
+  { code:'dra',   apiBibleId:null,                  label:'DRA',   full:'Douay-Rheims (Catholic)',     desc:'The traditional Catholic English Bible.',              badge:'✝️' },
 ]
 
 // ── 2. Book ID map ────────────────────────────────────────────────
@@ -530,6 +545,68 @@ async function fetchFromApiBible(bookName, chapter, apiBibleId) {
   if (!verses.length) throw new Error('No verses found in response.')
   return verses
 }
+// ── Groq AI Bible translation ─────────────────────────────────────
+// Takes English verses and translates them to the target language.
+async function translateVersesWithGroq(verses, targetLanguage, bookName, chapter) {
+  const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY || ''
+  if (!GROQ_KEY) return verses // No key — return English as fallback
+
+  const verseText = verses
+    .map(v => `[${v.verse}] ${v.text}`)
+    .join('\n')
+
+  const prompt = `You are a Biblical translator. Translate the following Bible verses from English into ${targetLanguage}.
+
+Rules:
+- Keep the verse numbers in square brackets exactly as they are e.g. [1], [2], [3]
+- Translate only the verse text — do not add commentary or notes
+- Use reverent, faithful language appropriate for Scripture
+- Preserve the meaning and tone of the original text
+- Return ONLY the translated verses in the same format as the input
+
+Verses to translate (${bookName} Chapter ${chapter}):
+${verseText}`
+
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.2,   // Low temperature = more faithful translation
+        max_tokens: 4000,
+      }),
+    })
+
+    if (!res.ok) return verses // API error — return English as fallback
+
+    const data = await res.json()
+    const translated = data?.choices?.[0]?.message?.content || ''
+
+    // Parse the translated text back into verse objects
+    const matches = [...translated.matchAll(/\[(\d+)\]\s*([\s\S]*?)(?=\[\d+\]|$)/g)]
+    if (!matches.length) return verses // Parse failed — return English
+
+    const translatedVerses = matches
+      .map(m => ({
+        verse: Number(m[1]),
+        text: m[2].replace(/\s+/g, ' ').trim(),
+      }))
+      .filter(v => v.text.length > 0)
+
+    // Make sure we got a reasonable number of verses back
+    return translatedVerses.length >= verses.length * 0.8
+      ? translatedVerses
+      : verses // Too few verses parsed — return English as fallback
+
+  } catch {
+    return verses // Network error — return English as fallback
+  }
+}
 async function fetchChapter(bookName, chapter, code) {
   const t = TRANSLATIONS.find(t=>t.code===code)
   if (!t) throw new Error(`Unknown translation: ${code}`)
@@ -646,7 +723,7 @@ function SingingMode({ hymn, onClose, onSpeak, onStop, isReading }) {
 // ── Main Component
 // ═════════════════════════════════════════════════════════════════
 export default function BibleReaderPage() {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
 
   // ── Core Bible state ──────────────────────────────────────────
   const [view,            setView]            = useState('books')
@@ -654,6 +731,8 @@ export default function BibleReaderPage() {
   const [selectedBook,    setSelectedBook]     = useState(null)
   const [selectedChapter, setSelectedChapter]  = useState(null)
   const [verses,          setVerses]           = useState([])
+  const [displayVerses,   setDisplayVerses]    = useState([])
+  const [translating,     setTranslating]      = useState(false)
   const [loading,         setLoading]          = useState(false)
   const [error,           setError]            = useState(null)
   const [version,         setVersion]          = useState(()=>LS.get('sv_version','kjv'))
@@ -684,6 +763,14 @@ export default function BibleReaderPage() {
   const [noteDraft,  setNoteDraft]  = useState('')
   const [toast,      setToast]      = useState(null)
   const [sidePanel,  setSidePanel]  = useState(null)
+    // ── Dr. Silas passage chat ────────────────────────────────────
+    const [selectedVerses,  setSelectedVerses]  = useState(new Set())
+    const [silasOpen,       setSilasOpen]       = useState(false)
+    const [silasMessages,   setSilasMessages]   = useState([])
+    const [silasInput,      setSilasInput]      = useState('')
+    const [silasLoading,    setSilasLoading]    = useState(false)
+    const silasEndRef  = useRef(null)
+    const silasInputRef = useRef(null)
 
   const noteRef     = useRef(null)
   const prevViewRef = useRef(null)
@@ -709,20 +796,59 @@ export default function BibleReaderPage() {
 
   // ── Reset hymn filters on collection switch ───────────────────
   useEffect(()=>{ setHymnCategory('All'); setHymnSearch('') },[hymnCollection])
+    // ── Re-translate when language changes ────────────────────────
+    useEffect(()=>{
+      if (!verses.length) return
+      const targetLang = LANG_DISPLAY[lang]
+      if (!targetLang) {
+        setDisplayVerses(verses) // Switch back to English instantly
+        return
+      }
+      let cancelled = false
+      setTranslating(true)
+      translateVersesWithGroq(verses, targetLang, selectedBook?.name, selectedChapter)
+        .then(translated => {
+          if (!cancelled) setDisplayVerses(translated)
+          setTranslating(false)
+        })
+      return () => { cancelled = true }
+    }, [lang])
 
   // ── Fetch Bible chapter ───────────────────────────────────────
   useEffect(()=>{
     if (!selectedBook||!selectedChapter) return
     let cancelled = false
-    setLoading(true); setVerses([]); setError(null)
+    setLoading(true); setVerses([]); setDisplayVerses([]); setError(null)
     fetchChapter(selectedBook.name, selectedChapter, version)
-      .then(v=>{ if(!cancelled){ setVerses(v); setLoading(false) } })
+      .then(async v=>{
+        if (cancelled) return
+        setVerses(v)
+        setLoading(false)
+        // Translate if not English
+        const targetLang = LANG_DISPLAY[lang]
+        if (targetLang) {
+          setTranslating(true)
+          const translated = await translateVersesWithGroq(v, targetLang, selectedBook.name, selectedChapter)
+          if (!cancelled) setDisplayVerses(translated)
+          setTranslating(false)
+        } else {
+          setDisplayVerses(v) // English — use directly
+        }
+      })
       .catch(e=>{ if(!cancelled){ setError(e.message); setLoading(false) } })
     return ()=>{ cancelled=true }
   },[selectedBook,selectedChapter,version])
 
+
   // ── Auto-focus note textarea ──────────────────────────────────
   useEffect(()=>{ if(noteVerse&&noteRef.current) noteRef.current.focus() },[noteVerse])
+    useEffect(()=>{
+      silasEndRef.current?.scrollIntoView({ behavior:'smooth' })
+    }, [silasMessages])
+  
+    useEffect(()=>{
+      if (silasOpen) setTimeout(()=>silasInputRef.current?.focus(), 400)
+    }, [silasOpen])
 
   // ── Close menus on outside click ──────────────────────────────
   useEffect(()=>{
@@ -733,6 +859,162 @@ export default function BibleReaderPage() {
 
   // ── Toast ─────────────────────────────────────────────────────
   const showToast = msg => { setToast(msg); setTimeout(()=>setToast(null),2600) }
+    // ── Dr. Silas chat functions ──────────────────────────────────
+    const SILAS_API_KEY = import.meta.env.VITE_GROQ_API_KEY || ''
+    const SILAS_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
+
+    async function callSilasAI(prompt) {
+      if (!SILAS_API_KEY) throw new Error('NO_API_KEY')
+      const res = await fetch(SILAS_API_URL, {
+        method:  'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${SILAS_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model:       'llama-3.3-70b-versatile',
+          messages:    [{ role: 'user', content: prompt }],
+          temperature: 0.75,
+          max_tokens:  1400,
+        }),
+      })
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}))
+        throw new Error(`API ${res.status}: ${errBody?.error?.message || res.statusText}`)
+      }
+      const data = await res.json()
+      return data?.choices?.[0]?.message?.content || ''
+    }
+  
+    function toggleVerseSelect(vNum) {
+      setSelectedVerses(prev => {
+        const next = new Set(prev)
+        if (next.has(vNum)) next.delete(vNum)
+        else next.add(vNum)
+        return next
+      })
+    }
+  
+    function clearSelection() {
+      setSelectedVerses(new Set())
+      setSilasOpen(false)
+      setSilasMessages([])
+      setSilasInput('')
+    }
+  
+    async function openSilasChat() {
+      if (!selectedVerses.size) return
+      const passage = verses
+        .filter(v => selectedVerses.has(v.verse))
+        .map(v => `[${v.verse}] ${v.text}`)
+        .join('\n')
+      const ref = `${selectedBook?.name} ${selectedChapter}:${[...selectedVerses].sort((a,b)=>a-b).join(', ')}`
+    
+      // Get prayer intention from sessionStorage
+      const prayerData = JSON.parse(sessionStorage.getItem('prayerIntention') || '{}')
+      const prayerIntention = prayerData.intention || null
+      const prayerCategory = prayerData.category || null
+    
+      setSilasOpen(true)
+      setSilasMessages([])
+      setSilasLoading(true)
+    
+      try {
+        const openingPrompt = `You are Dr. Silas — a warm, deeply wise, and compassionate Bible scholar and pastoral counsellor. You speak like a trusted pastor who genuinely cares about the person in front of you.
+    
+    The user has selected this passage for reflection:
+    
+    Reference: ${ref} (${version.toUpperCase()})
+    
+    Text:
+    ${passage}
+    ${prayerIntention ? `\n\nThe user came to pray about:\n"${prayerIntention}"\n(Prayer focus: ${prayerCategory})` : ''}
+    
+    Your task for this opening response:
+    1. Begin with a warm, personal greeting — acknowledge that they have chosen a meaningful passage
+    ${prayerIntention ? `2. Gently acknowledge their prayer intention: "${prayerIntention}" — show that you understand what brought them here
+    3. Connect this Scripture directly to their prayer need — help them see how God's Word speaks to their situation
+    4. Offer a rich but accessible spiritual insight into what this passage means in light of their prayer
+    5. Point out one or two connections between the verses if multiple are selected
+    6. Then ask ONE thoughtful reflection question that helps them go deeper into both the Scripture AND their prayer need` : `2. Offer a rich but accessible spiritual insight into what this passage means — its context, its heart, its invitation
+    3. Point out one or two connections between the verses if multiple are selected
+    4. Then ask ONE thoughtful reflection question to begin the conversation`}
+    
+    Write in flowing, warm prose — no bullet points. Keep it to 3-4 paragraphs maximum.
+    Begin directly with your greeting — do not say "Here is my response."`
+        const response = await callSilasAI(openingPrompt)
+        setSilasMessages([{ role: 'assistant', text: response }])
+      } catch (err) {
+        const msg = err.message === 'NO_API_KEY'
+          ? 'Hello! I\'m Dr. Silas. It looks like the Gemini API key is not set up yet. Please add VITE_GEMINI_API_KEY to your .env file and restart the dev server.'
+          : `Hello! I\'m Dr. Silas. I encountered an error: ${err.message}. Please check your API key and internet connection.`
+        setSilasMessages([{ role: 'assistant', text: msg }])
+      } finally {
+        setSilasLoading(false)
+      }
+    }
+  
+    async function sendSilasMessage(e) {
+      e.preventDefault()
+      if (!silasInput.trim() || silasLoading) return
+    
+      const passage = verses
+        .filter(v => selectedVerses.has(v.verse))
+        .map(v => `[${v.verse}] ${v.text}`)
+        .join('\n')
+      const ref = `${selectedBook?.name} ${selectedChapter}:${[...selectedVerses].sort((a,b)=>a-b).join(', ')}`
+    
+      // Get prayer intention for context
+      const prayerData = JSON.parse(sessionStorage.getItem('prayerIntention') || '{}')
+      const prayerIntention = prayerData.intention || null
+    
+      const userMsg = { role: 'user', text: silasInput.trim() }
+      setSilasMessages(prev => [...prev, userMsg])
+      setSilasInput('')
+      setSilasLoading(true)
+    
+      try {
+        const history = silasMessages
+          .slice(-6)
+          .map(m => `${m.role === 'user' ? 'User' : 'Dr. Silas'}: ${m.text}`)
+          .join('\n\n')
+    
+        const prompt = `You are Dr. Silas — a warm, wise, and compassionate Bible scholar and pastoral counsellor.
+    
+    The user is reflecting on this passage:
+    Reference: ${ref} (${version.toUpperCase()})
+    Text:
+    ${passage}
+    ${prayerIntention ? `\n\nTheir prayer intention: "${prayerIntention}"` : ''}
+    
+    Conversation so far:
+    ${history}
+    
+    The user just said: "${userMsg.text}"
+    
+    Your instructions:
+    1. Respond warmly and personally as Dr. Silas — like a trusted pastor, not a textbook
+    2. If the user shares something personal or painful, respond with pastoral empathy FIRST, then bring in Scripture
+    3. Reference specific verses from the selected passage when relevant
+    ${prayerIntention ? `4. Keep their prayer intention in mind: "${prayerIntention}" — help them connect the Scripture to their prayer need` : `4. Help the user connect the scripture to their real life and current situation`}
+    5. Offer spiritual insight — grace, hope, challenge, or comfort as appropriate
+    6. End with either an encouraging thought OR a gentle follow-up question to deepen reflection
+    7. Write in flowing warm prose — NO bullet points
+    8. Keep to 2 to 4 paragraphs
+    
+    Begin your response directly.`
+  
+        const response = await callSilasAI(prompt)
+        setSilasMessages(prev => [...prev, { role: 'assistant', text: response }])
+      } catch (err) {
+        setSilasMessages(prev => [...prev, {
+          role: 'assistant',
+          text: 'I\'m sorry, I encountered a connection error. Please try again.',
+        }])
+      } finally {
+        setSilasLoading(false)
+      }
+    }
 
   // ── Speech & Karaoke ──────────────────────────────────────────
   const stopNarration = () => {
@@ -1133,6 +1415,166 @@ export default function BibleReaderPage() {
       <style>{FONT+ANIM}</style>
 
       {toast&&<div style={s.toast}>{toast}</div>}
+            {/* ── Dr. Silas floating selection bar ── */}
+            {selectedVerses.size > 0 && !silasOpen && (
+        <div style={{
+          position:       'fixed',
+          bottom:         '24px',
+          left:           '50%',
+          transform:      'translateX(-50%)',
+          background:     'linear-gradient(135deg, #1e1005, #2a1a08)',
+          border:         '1px solid rgba(240,192,64,0.5)',
+          borderRadius:   '30px',
+          padding:        '12px 20px',
+          display:        'flex',
+          gap:            '12px',
+          alignItems:     'center',
+          zIndex:         400,
+          boxShadow:      '0 8px 32px rgba(0,0,0,0.6)',
+          animation:      'fadeUp 0.25s ease',
+          flexWrap:       'wrap',
+          justifyContent: 'center',
+          maxWidth:       '90vw',
+        }}>
+          <span style={{ color:'#f0c040', fontSize:'0.9rem', fontWeight:'700' }}>
+            📖 {selectedVerses.size} verse{selectedVerses.size > 1 ? 's' : ''} selected
+          </span>
+          <button
+            onClick={openSilasChat}
+            style={{
+              background:   'linear-gradient(135deg,#f0c040,#c8860a)',
+              border:       'none', borderRadius: '20px',
+              padding:      '8px 18px',
+              color:        '#1a0a00', cursor: 'pointer',
+              fontFamily:   'inherit', fontSize: '0.9rem', fontWeight: '700',
+            }}
+          >
+            🧑‍🏫 Chat with Dr. Silas
+          </button>
+          <button
+            onClick={clearSelection}
+            style={{
+              background: 'transparent',
+              border:     '1px solid rgba(240,192,64,0.3)',
+              borderRadius:'20px', padding:'8px 14px',
+              color:      '#c8a96e', cursor:'pointer',
+              fontFamily: 'inherit', fontSize:'0.85rem',
+            }}
+          >
+            ✕ Clear
+          </button>
+        </div>
+      )}
+
+      {/* ── Dr. Silas chat panel ── */}
+      {silasOpen && (
+        <div style={ds.overlay} onClick={clearSelection}>
+          <div style={ds.panel} onClick={e => e.stopPropagation()}>
+
+            {/* Panel top bar */}
+            <div style={ds.topBar}>
+              <div style={ds.avatar}>🧑‍🏫</div>
+              <div>
+                <div style={{ color:'#f0c040', fontWeight:'700', fontSize:'0.95rem' }}>Dr. Silas</div>
+                <div style={{ color:'#7a6040', fontSize:'0.72rem' }}>Bible Scholar & Pastoral Guide</div>
+              </div>
+              <div style={ds.passageTag}>
+                📖 {selectedBook?.name} {selectedChapter}:{[...selectedVerses].sort((a,b)=>a-b).join(',')}
+              </div>
+              <button style={ds.closeBtn} onClick={clearSelection}>✕</button>
+            </div>
+
+            {/* Messages */}
+            <div style={ds.messages}>
+              {silasMessages.map((msg, i) => (
+                <div key={i} className="silas-msg" style={ds.bubble(msg.role === 'user')}>
+                  {msg.role === 'assistant' && (
+                    <div style={ds.avatar}>🧑‍🏫</div>
+                  )}
+                  <div style={ds.bubbleText(msg.role === 'user')}>
+                    {msg.text}
+                  </div>
+                  {msg.role === 'user' && (
+                    <div style={ds.userAvatar}>👤</div>
+                  )}
+                </div>
+              ))}
+
+              {/* Typing indicator */}
+              {silasLoading && (
+                <div className="silas-msg" style={ds.typing}>
+                  <div style={ds.avatar}>🧑‍🏫</div>
+                  <div style={ds.typingBubble}>
+                    <div style={ds.spinner} />
+                    <span style={{ color:'#c8a96e', fontSize:'0.85rem' }}>Dr. Silas is reflecting…</span>
+                  </div>
+                </div>
+              )}
+              <div ref={silasEndRef} />
+            </div>
+
+            {/* Quick reflection prompts — shown before first user reply */}
+            {silasMessages.length <= 1 && !silasLoading && (
+              <div style={{
+                padding:    '0.5rem 1.25rem',
+                borderTop:  '1px solid rgba(240,192,64,0.08)',
+                background: 'rgba(0,0,0,0.15)',
+                flexShrink: 0,
+              }}>
+                <div style={{ color:'#7a6040', fontSize:'0.72rem', marginBottom:'0.4rem' }}>
+                  💡 Tap to respond:
+                </div>
+                <div style={{ display:'flex', gap:'6px', flexWrap:'wrap' }}>
+                  {[
+                    'This speaks to something I am going through right now',
+                    'What is the historical background of this passage?',
+                    'How can I apply this to my life today?',
+                    'I find this passage difficult to understand',
+                  ].map((q, i) => (
+                    <button
+                      key={i}
+                      onClick={() => { setSilasInput(q); silasInputRef.current?.focus() }}
+                      style={{
+                        padding:      '4px 10px', borderRadius: '12px',
+                        border:       '1px solid rgba(240,192,64,0.2)',
+                        background:   'rgba(240,192,64,0.06)',
+                        color:        '#c8a96e', cursor: 'pointer',
+                        fontFamily:   'inherit', fontSize: '0.75rem',
+                        textAlign:    'left',
+                      }}
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Input */}
+            <form onSubmit={sendSilasMessage} style={ds.inputRow}>
+              <input
+                ref={silasInputRef}
+                type="text"
+                value={silasInput}
+                onChange={e => setSilasInput(e.target.value)}
+                placeholder="Share your thoughts or ask Dr. Silas anything…"
+                style={ds.input}
+                disabled={silasLoading}
+              />
+              <button
+                type="submit"
+                disabled={!silasInput.trim() || silasLoading}
+                style={{
+                  ...ds.sendBtn,
+                  opacity: !silasInput.trim() || silasLoading ? 0.45 : 1,
+                }}
+              >
+                📤
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {noteVerse!==null&&(
         <div style={s.overlay} onClick={()=>setNoteVerse(null)}>
@@ -1186,11 +1628,19 @@ export default function BibleReaderPage() {
       </header>
 
       <main style={s.scriptureColumn}>
-        {loading&&(
+      {loading&&(
           <div style={s.centerMsg}>
             <div style={s.spinner}/>
             <div style={{marginTop:'1rem',color:'#f0c040'}}>📖 {t('loading')}</div>
-
+          </div>
+        )}         {translating&&!loading&&(
+          <div style={{
+            textAlign:'center', color:'#c8a96e', fontSize:'0.95rem',
+            fontStyle:'italic', marginBottom:'1rem',
+            padding:'8px 16px', background:'rgba(240,192,64,0.08)',
+            borderRadius:'10px', border:'1px solid rgba(240,192,64,0.2)',
+          }}>
+            🌐 Translating into {LANG_DISPLAY[lang]}… this may take a moment
           </div>
         )}
         {!loading&&error&&(
@@ -1210,9 +1660,47 @@ export default function BibleReaderPage() {
           <>
             <div style={s.versionBadge}>
               {currentTrans?.badge} Reading: <strong>{currentTrans?.full||version}</strong>
-              <span style={{fontSize:'0.8rem',marginLeft:'8px',opacity:0.6}}>— Tap any verse for options</span>
+              <span style={{fontSize:'0.8rem',marginLeft:'8px',opacity:0.6}}>
+                — Tap any verse → choose <strong>✅ Select to reflect</strong> → add more verses → Chat with Dr. Silas
+              </span>
             </div>
-            {verses.map(v=>{
+            {selectedVerses.size > 0 && (
+              <div style={{
+                background:   'rgba(240,192,64,0.1)',
+                border:       '1px solid rgba(240,192,64,0.3)',
+                borderRadius: '10px',
+                padding:      '8px 14px',
+                marginBottom: '1rem',
+                display:      'flex',
+                alignItems:   'center',
+                gap:          '10px',
+                flexWrap:     'wrap',
+              }}>
+                <span style={{ color:'#f0c040', fontSize:'0.88rem', fontWeight:'700' }}>
+                  ✅ {selectedVerses.size} verse{selectedVerses.size > 1 ? 's' : ''} selected
+                </span>
+                <span style={{ color:'#c8a96e', fontSize:'0.8rem' }}>
+                  Tap more verses to add them · Tap a gold verse to remove it
+                </span>
+                <button
+                  onClick={clearSelection}
+                  style={{
+                    marginLeft:   'auto',
+                    background:   'transparent',
+                    border:       '1px solid rgba(240,192,64,0.3)',
+                    borderRadius: '12px',
+                    padding:      '3px 10px',
+                    color:        '#c8a96e',
+                    cursor:       'pointer',
+                    fontFamily:   'inherit',
+                    fontSize:     '0.78rem',
+                  }}
+                >
+                  ✕ Clear all
+                </button>
+              </div>
+            )}
+            {displayVerses.map(v=>{
               const ref       = vRef(v.verse)
               const hlColor   = highlights[ref]
               const fav       = isFav(v.verse)
@@ -1227,8 +1715,24 @@ export default function BibleReaderPage() {
                       ...s.verse,
                       ...(readingVerse===v.verse||readingVerse==='all' ? s.verseActive : {}),
                       ...(hlColor?{background:hlColor,borderLeft:`3px solid ${hlColor.replace('55','cc')}`,paddingLeft:'14px'}:{}),
+                    ...(selectedVerses.has(v.verse) ? { background:'rgba(240,192,64,0.18)', borderLeft:'3px solid #f0c040', paddingLeft:'14px', borderRadius:'8px' } : {}),
                     }}
-                    onClick={e=>{e.stopPropagation();setActiveMenu(menuOpen?null:v.verse);setShareMenu(null)}}>
+                    onClick={e=>{
+                      e.stopPropagation()
+                      if (selectedVerses.has(v.verse)) {
+                        // Tap a selected verse to deselect it
+                        toggleVerseSelect(v.verse)
+                        setActiveMenu(null)
+                      } else if (selectedVerses.size > 0) {
+                        // Already in selection mode — add this verse
+                        toggleVerseSelect(v.verse)
+                        setActiveMenu(null)
+                      } else {
+                        // Normal mode — open context menu
+                        setActiveMenu(menuOpen ? null : v.verse)
+                        setShareMenu(null)
+                      }
+                    }}>
                     <sup style={s.verseNum}>{v.verse}</sup>
                     {/* ── Karaoke word-by-word rendering ── */}
                     {words.map((word, wi) => {
@@ -1248,6 +1752,10 @@ export default function BibleReaderPage() {
                   {menuOpen&&(
                     <div style={s.vMenu} onClick={e=>e.stopPropagation()}>
                       <button style={s.mBtn} onClick={()=>{speak(v.text,v.verse);setActiveMenu(null)}}>🔊 Listen to verse</button>
+                      <button style={{...s.mBtn, color:'#f0c040', fontWeight:'700'}}
+                        onClick={()=>{ toggleVerseSelect(v.verse); setActiveMenu(null) }}>
+                        ✅ Select to reflect with Dr. Silas
+                      </button>
                       <button style={s.mBtn} onClick={()=>copyVerse(v.text,v.verse)}>📋 Copy verse</button>
                       <button style={s.mBtn} onClick={()=>toggleFav(v)}>{fav?'💛 Remove favorite':'⭐ Add to favorites'}</button>
                       <button style={s.mBtn} onClick={()=>openNote(v.verse)}>{note?'📝 Edit note':'📝 Add note'}</button>
@@ -1307,10 +1815,12 @@ export default function BibleReaderPage() {
 // ── Font & Animations ─────────────────────────────────────────────
 const FONT = `@import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&display=swap');`
 const ANIM = `
-  @keyframes spin    { to { transform:rotate(360deg); } }
-  @keyframes fadeUp  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-  @keyframes slideIn { from { opacity:0; transform:translateX(30px); } to { opacity:1; transform:translateX(0); } }
-  @keyframes karaoke { 0%,100% { opacity:0.85; } 50% { opacity:1; } }
+  @keyframes spin     { to { transform:rotate(360deg); } }
+  @keyframes fadeUp   { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes slideIn  { from { opacity:0; transform:translateX(30px); } to { opacity:1; transform:translateX(0); } }
+  @keyframes slideUp  { from { opacity:0; transform:translateY(60px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes karaoke  { 0%,100% { opacity:0.85; } 50% { opacity:1; } }
+  .silas-msg { animation: fadeUp 0.3s ease both; }
 `
 
 // ── Singing Mode Styles ───────────────────────────────────────────
@@ -1395,6 +1905,129 @@ const sp = {
 }
 
 // ── Main Styles ───────────────────────────────────────────────────
+// ── Dr. Silas Panel Styles ────────────────────────────────────────
+const ds = {
+  overlay: {
+    position:   'fixed', inset: 0,
+    background: 'rgba(0,0,0,0.5)',
+    zIndex:     500,
+    display:    'flex', alignItems: 'flex-end', justifyContent: 'center',
+  },
+  panel: {
+    width:         '100%', maxWidth: '780px',
+    height:        '82vh',
+    background:    '#0d0800',
+    border:        '1px solid rgba(240,192,64,0.3)',
+    borderRadius:  '20px 20px 0 0',
+    display:       'flex', flexDirection: 'column',
+    fontFamily:    "'Crimson Text', serif",
+    animation:     'slideUp 0.3s ease',
+    overflow:      'hidden',
+  },
+  topBar: {
+    display:        'flex', gap: '12px', alignItems: 'center',
+    padding:        '1rem 1.25rem',
+    borderBottom:   '1px solid rgba(240,192,64,0.15)',
+    background:     'linear-gradient(135deg, rgba(240,192,64,0.1), rgba(18,10,5,0.98))',
+    flexShrink:     0,
+  },
+  avatar: {
+    width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0,
+    background: 'linear-gradient(135deg,#f0c040,#c8860a)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: '1.2rem',
+  },
+  passageTag: {
+    marginLeft:   'auto',
+    background:   'rgba(240,192,64,0.12)',
+    border:       '1px solid rgba(240,192,64,0.3)',
+    borderRadius: '10px',
+    padding:      '3px 10px',
+    color:        '#f0c040',
+    fontSize:     '0.75rem',
+    fontWeight:   '700',
+    maxWidth:     '200px',
+    overflow:     'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace:   'nowrap',
+  },
+  closeBtn: {
+    background: 'none', border: 'none', color: '#c8a96e',
+    cursor: 'pointer', fontSize: '1.2rem', flexShrink: 0,
+  },
+  messages: {
+    flex: 1, overflowY: 'auto',
+    padding: '1rem 1.25rem',
+    display: 'flex', flexDirection: 'column', gap: '0.75rem',
+  },
+  bubble: (isUser) => ({
+    display:        'flex',
+    gap:            '10px',
+    justifyContent: isUser ? 'flex-end' : 'flex-start',
+    alignItems:     'flex-end',
+  }),
+  bubbleText: (isUser) => ({
+    maxWidth:     '78%',
+    background:   isUser
+      ? 'linear-gradient(135deg,rgba(240,192,64,0.25),rgba(200,134,10,0.15))'
+      : 'rgba(255,255,255,0.06)',
+    border:       isUser
+      ? '1px solid rgba(240,192,64,0.4)'
+      : '1px solid rgba(240,192,64,0.12)',
+    borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+    padding:      '0.75rem 1rem',
+    color:        '#f0e6d2',
+    fontSize:     '0.95rem',
+    lineHeight:   '1.75',
+    whiteSpace:   'pre-wrap',
+  }),
+  userAvatar: {
+    width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
+    background: 'rgba(240,192,64,0.2)', border: '1px solid rgba(240,192,64,0.3)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem',
+  },
+  typing: {
+    display: 'flex', gap: '10px', alignItems: 'flex-end',
+  },
+  typingBubble: {
+    background:   'rgba(255,255,255,0.06)',
+    border:       '1px solid rgba(240,192,64,0.12)',
+    borderRadius: '16px 16px 16px 4px',
+    padding:      '0.75rem 1rem',
+    display:      'flex', gap: '6px', alignItems: 'center',
+  },
+  spinner: {
+    width: '13px', height: '13px', borderRadius: '50%',
+    border: '2px solid rgba(240,192,64,0.2)', borderTopColor: '#f0c040',
+    animation: 'spin 0.8s linear infinite', flexShrink: 0,
+  },
+  inputRow: {
+    display:    'flex', gap: '8px',
+    padding:    '0.85rem 1.25rem',
+    borderTop:  '1px solid rgba(240,192,64,0.12)',
+    background: 'rgba(0,0,0,0.2)',
+    flexShrink: 0,
+  },
+  input: {
+    flex:         1,
+    background:   'rgba(255,255,255,0.06)',
+    border:       '1px solid rgba(240,192,64,0.25)',
+    borderRadius: '12px',
+    padding:      '0.65rem 0.9rem',
+    color:        '#f0e6d2',
+    fontFamily:   "'Crimson Text', serif",
+    fontSize:     '0.95rem',
+    outline:      'none',
+  },
+  sendBtn: {
+    background:   'linear-gradient(135deg,#f0c040,#c8860a)',
+    border:       'none', borderRadius: '12px',
+    padding:      '0.65rem 1rem',
+    color:        '#1a0a00', cursor: 'pointer',
+    fontWeight:   '700', fontSize: '1rem',
+    transition:   'opacity 0.2s', flexShrink: 0,
+  },
+}
 const s = {
   page:            { background:'#120a05', minHeight:'100vh', color:'#f0e6d2',
                      padding:'2rem 1rem', fontFamily:"'Crimson Text', serif" },

@@ -23,6 +23,7 @@ import StudyProgressPage    from './pages/StudyProgressPage.jsx'
 import ValuesHubPage        from './pages/ValuesHubPage.jsx'
 import BiblicalSecretsPage  from './pages/BiblicalSecretsPage.jsx'
 import PrayerJournalPage    from './pages/PrayerJournalPage.jsx'
+import PrayerTab            from './pages/PrayerTab.jsx'
 import BibleMapsPage        from './pages/BibleMapsPage.jsx'
 import DeepSearchPage       from './pages/DeepSearchPage.jsx'
 
@@ -56,8 +57,9 @@ function AppShell() {
           <Route path="/progress"     element={<StudyProgressPage />} />
           <Route path="/values"       element={<ValuesHubPage />} />
           <Route path="/secrets"      element={<BiblicalSecretsPage />} />
-<Route path="/prayer"       element={<PrayerJournalPage />} />
-  <Route path="/maps"         element={<BibleMapsPage />} />
+          <Route path="/prayer"       element={<PrayerJournalPage />} />
+          <Route path="/prayer-guide" element={<PrayerTab />} />
+          <Route path="/maps"         element={<BibleMapsPage />} />
           <Route path="/search"       element={<DeepSearchPage />} />
           <Route path="*"             element={<NotFoundPage />} />
         </Routes>

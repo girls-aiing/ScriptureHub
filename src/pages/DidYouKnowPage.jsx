@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import TopicSearchPage from './TopicSearchPage.jsx'
 import { useLanguage } from '../context/LanguageContext.jsx'
 
 const ALL_SECRETS = [
@@ -222,7 +223,8 @@ export default function DidYouKnowPage() {
       }}>
         {[
           { key: 'discover',  label: `💡 ${t('discover')}` },
-          { key: 'bookmarks', label: `🔖 ${t('save')} (${bookmarks.length})` },
+          { key: 'bookmarks',    label: `🔖 ${t('save')} (${bookmarks.length})` },
+          { key: 'topicSearch',  label: `📖 Topic Search` },
         ].map(({ key, label }) => (
           <button key={key} onClick={() => setTab(key)} style={{
             padding:      '0.5rem 1.2rem',
@@ -486,6 +488,8 @@ export default function DidYouKnowPage() {
           </div>
         )}
 
+        {/* ── TOPIC SEARCH TAB ── */}
+        {tab === 'topicSearch' && <TopicSearchPage />}
         {/* ── BOOKMARKS TAB ── */}
         {tab === 'bookmarks' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

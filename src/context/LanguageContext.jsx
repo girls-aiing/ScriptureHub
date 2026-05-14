@@ -194,6 +194,8 @@ const TRANSLATIONS = {
 
   // ── DID YOU KNOW ─────────────────────────────────────────────
   didYouKnow:         { en:'Did You Know?',      fr:'Le Saviez-Vous ?',    es:'¿Sabías Que?',        pt:'Você Sabia?',         yo:'Ṣé O Mọ̀?',           ig:'Ị Maara?',            ha:'Shin Ka Sani?',       sw:'Je, Ulijua?',         ar:'هل تعلم؟',            zh:'你知道吗？' },
+  topicSearch:        { en:'Topic Search',    fr:'Recherche par Sujet',  es:'Búsqueda por Tema',  pt:'Busca por Tópico',   yo:'Wá Nípa Koko',       ig:'Chọọ Isiokwu',      ha:'Bincike Jiya',       sw:'Tafuta Mada',        ar:'البحث حسب الموضوع',  zh:'主题搜索' },
+  drSilas:            { en:'Dr. Silas',       fr:'Dr. Silas',            es:'Dr. Silas',          pt:'Dr. Silas',          yo:'Dr. Silas',           ig:'Dr. Silas',          ha:'Dr. Silas',          sw:'Dr. Silas',          ar:'د. سيلاس',           zh:'西拉斯博士' },
 
   // ── GENERAL UI ───────────────────────────────────────────────
   close:              { en:'Close',              fr:'Fermer',              es:'Cerrar',              pt:'Fechar',              yo:'Tì',                  ig:'Mechie',              ha:'Rufe',                sw:'Funga',               ar:'إغلاق',               zh:'关闭' },

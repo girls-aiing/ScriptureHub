@@ -1154,7 +1154,7 @@ function Lightning({ C, onBack, onWin, xp, selectedRank }) {
         <h3 style={{ color:C.text, fontFamily:'Georgia,serif', marginBottom:'1rem' }}>Time is Up!</h3>
         <p style={{ color:C.purple, fontSize:'2rem', fontWeight:'800', fontFamily:'Georgia,serif', marginBottom:'1rem' }}>{score} pts</p>
         <p style={{ color:C.muted, fontFamily:'Georgia,serif', marginBottom:'1.5rem' }}>{score>=15?'🔥 Incredible!':score>=10?'⭐ Great work!':score>=5?'📖 Keep studying!':'🌱 Keep going!'}</p>
-        <Btn onClick={() => { setPhase('intro'); setScore(0); setTimeLeft(60); setIdx(0) }} C={C}>Play Again</Btn>
+        <Btn onClick={() => { setPhase('intro'); setScore(0); setTimeLeft(60); setIdx(0) }} C={C}>{t('playAgain')}</Btn>
       </Card>
     </Shell>
   )
@@ -1163,7 +1163,7 @@ function Lightning({ C, onBack, onWin, xp, selectedRank }) {
   return (
     <Shell title="Lightning Round" icon="⚡" C={C} onBack={onBack}>
       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'0.75rem' }}>
-        <span style={{ color:timeLeft<=10?'#e74c3c':C.purple, fontWeight:'800', fontFamily:'Georgia,serif', fontSize:'1.2rem' }}>⏱ {timeLeft}s</span>
+        <span style={{ color:timeLeft<=10?'#e74c3c':C.purple, fontWeight:'800', fontFamily:'Georgia,serif', fontSize:'1.2rem' }}>⏱ {t('timeLeft')}: {timeLeft}s</span>
         <span style={{ color:C.gold, fontWeight:'800', fontFamily:'Georgia,serif' }}>Score: {score}</span>
       </div>
       <div style={{ height:'8px', background:C.border, borderRadius:'999px', overflow:'hidden', marginBottom:'1.25rem' }}>
@@ -1443,7 +1443,7 @@ function Prophecy({ C, onBack, onWin }) {
       {done && (
         <div style={{ textAlign:'center' }}>
           <p style={{ color:'#27ae60', fontWeight:'800', fontFamily:'Georgia,serif', marginBottom:'1rem' }}>🎉 All prophecies matched!</p>
-          <Btn onClick={() => onWin('prophecy', 60, 'All pairs matched')} C={C}>Claim +60 XP</Btn>
+          <Btn onClick={() => onWin('prophecy', 60, 'All pairs matched')} C={C}>{t('claim')} +60 XP</Btn>
         </div>
       )}
     </Shell>

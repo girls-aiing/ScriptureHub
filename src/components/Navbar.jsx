@@ -50,7 +50,7 @@ export default function Navbar({ toggleSlot }) {
 
   const isDiscoveryActive = ['/did-you-know', '/secrets', '/maps'].includes(location.pathname)
   const isAiActive        = ['/ai', '/values', '/search'].includes(location.pathname)
-  const isPrayerActive    = ['/prayer', '/progress'].includes(location.pathname)
+  const isPrayerActive    = ['/prayer-guide', '/prayer', '/progress'].includes(location.pathname)
 
   const openAi        = () => { setAiOpen(p => !p);        setDiscoveryOpen(false); setPrayerOpen(false) }
   const openDiscovery = () => { setDiscoveryOpen(p => !p); setAiOpen(false);        setPrayerOpen(false) }
@@ -528,9 +528,18 @@ export default function Navbar({ toggleSlot }) {
             {prayerOpen && (
               <div className="dropdown-menu" role="menu">
                 <div className="dropdown-label">Personal</div>
-                <Link to="/prayer" className={isActive('/prayer') ? 'active' : ''}
+                <Link to="/prayer-guide" className={isActive('/prayer-guide') ? 'active' : ''}
                   role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
                   <span style={{ fontSize:'1.1rem' }}>🙏</span>
+                  <div>
+                    <div style={{ fontWeight:'600', marginBottom:'2px' }}>Let's Pray</div>
+                    <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Guided prayer with Dr. Silas</div>
+                  </div>
+                </Link>
+                <div className="dropdown-divider" />
+                <Link to="/prayer" className={isActive('/prayer') ? 'active' : ''}
+                  role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
+                  <span style={{ fontSize:'1.1rem' }}>📔</span>
                   <div>
                     <div style={{ fontWeight:'600', marginBottom:'2px' }}>Prayer Journal</div>
                     <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Private prayers &amp; answered ones</div>
@@ -662,10 +671,15 @@ export default function Navbar({ toggleSlot }) {
 
           {/* My Journey section */}
           <div className="mobile-section-header">🙏 My Journey</div>
+          <Link to="/prayer-guide"
+            className={`mobile-sub-item${isActive('/prayer-guide') ? ' active' : ''}`}
+            onClick={() => { closeMenu(); playNavClick() }}>
+            🙏 Let's Pray
+          </Link>
           <Link to="/prayer"
             className={`mobile-sub-item${isActive('/prayer') ? ' active' : ''}`}
             onClick={() => { closeMenu(); playNavClick() }}>
-            🙏 Prayer Journal
+            📔 Prayer Journal
           </Link>
           <Link to="/progress"
             className={`mobile-sub-item${isActive('/progress') ? ' active' : ''}`}

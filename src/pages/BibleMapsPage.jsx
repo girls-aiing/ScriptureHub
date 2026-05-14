@@ -601,7 +601,8 @@ function LocationDetail({ loc, color, onClose }) {
 // ══════════════════════════════════════════════════════════════════
 // INTERACTIVE MAP COMPONENT
 // ══════════════════════════════════════════════════════════════════
-function InteractiveMap({ mapData }) {
+function InteractiveMap({ mapData, onClose }) {
+  const { t } = useLanguage()
   const [selectedLoc,   setSelectedLoc]   = useState(null)
   const [activeJourney, setActiveJourney] = useState(null)
   const [hoveredLoc,    setHoveredLoc]    = useState(null)
@@ -610,12 +611,13 @@ function InteractiveMap({ mapData }) {
   const mapRef = useRef(null)
 
   const highlightedIds = useMemo(() => {
-    if (!activeJourney) return new Set()
+    if (!activeJourney || !mapData) return new Set()
     const j = mapData.journeys.find(j => j.id === activeJourney)
     return j ? new Set(j.cities) : new Set()
   }, [activeJourney, mapData])
 
   const journeyColor = useMemo(() => {
+    if (!mapData) return '#f0c040'
     if (!activeJourney) return mapData.color
     const j = mapData.journeys.find(j => j.id === activeJourney)
     return j ? j.color : mapData.color

@@ -233,6 +233,7 @@ const ANIM = `
 // RESULT CARD
 // ══════════════════════════════════════════════════════════════════
 function ResultCard({ result, index, query, onCopy }) {
+  const { t } = useLanguage()
   const [copied, setCopied] = useState(false)
   const [expanded, setExpanded] = useState(false)
 
@@ -374,6 +375,7 @@ function ResultCard({ result, index, query, onCopy }) {
 // AI INSIGHT PANEL
 // ══════════════════════════════════════════════════════════════════
 function AIInsightPanel({ insight, query }) {
+  const { t } = useLanguage()
   if (!insight) return null
   return (
     <div style={{
