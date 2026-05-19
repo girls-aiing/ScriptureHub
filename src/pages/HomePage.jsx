@@ -44,6 +44,16 @@ const FEATURE_TEASERS = [
     color: '#27ae60',
   },
   {
+    id: 'name-dictionary',
+    icon: '📜',
+    title: 'Name Dictionary',
+    badge: 'All Cultures',
+    tagline: 'Discover the meaning, origin, and rich history behind any name from every culture and language worldwide — including deep biblical connections.',
+    ctaLabel: 'Look Up a Name',
+    to: '/name-dictionary',
+    color: '#c9a84c',
+  },
+  {
     id: 'growth-dashboard',
     icon: '📈',
     title: 'Growth Dashboard',

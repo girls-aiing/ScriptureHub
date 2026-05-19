@@ -26,6 +26,8 @@ import PrayerJournalPage    from './pages/PrayerJournalPage.jsx'
 import PrayerTab            from './pages/PrayerTab.jsx'
 import BibleMapsPage        from './pages/BibleMapsPage.jsx'
 import DeepSearchPage       from './pages/DeepSearchPage.jsx'
+import NameDictionaryPage   from './pages/NameDictionaryPage.jsx'
+import DreamInterpreterPage from './pages/DreamInterpreterPage.jsx'
 
 // Pages where the floating chat should be hidden
 const HIDDEN_CHAT_PATHS = ['/ai']
@@ -46,22 +48,24 @@ function AppShell() {
       <Navbar toggleSlot={<DarkModeToggle />} />
       <main className="app-main">
         <Routes>
-          <Route path="/"             element={<HomePage />} />
-          <Route path="/bible"        element={<BibleReaderPage />} />
-          <Route path="/quizzes"      element={<KnowledgeHubPage />} />
-          <Route path="/ai"           element={<AIAdvicePage />} />
-          <Route path="/did-you-know" element={<DidYouKnowPage />} />
-          <Route path="/games"        element={<GamesPage />} />
-          <Route path="/community"    element={<CommunityPage />} />
-          <Route path="/settings"     element={<SettingsPage />} />
-          <Route path="/progress"     element={<StudyProgressPage />} />
-          <Route path="/values"       element={<ValuesHubPage />} />
-          <Route path="/secrets"      element={<BiblicalSecretsPage />} />
-          <Route path="/prayer"       element={<PrayerJournalPage />} />
-          <Route path="/prayer-guide" element={<PrayerTab />} />
-          <Route path="/maps"         element={<BibleMapsPage />} />
-          <Route path="/search"       element={<DeepSearchPage />} />
-          <Route path="*"             element={<NotFoundPage />} />
+          <Route path="/"                element={<HomePage />} />
+          <Route path="/bible"           element={<BibleReaderPage />} />
+          <Route path="/quizzes"         element={<KnowledgeHubPage />} />
+          <Route path="/ai"              element={<AIAdvicePage />} />
+          <Route path="/did-you-know"    element={<DidYouKnowPage />} />
+          <Route path="/games"           element={<GamesPage />} />
+          <Route path="/community"       element={<CommunityPage />} />
+          <Route path="/settings"        element={<SettingsPage />} />
+          <Route path="/progress"        element={<StudyProgressPage />} />
+          <Route path="/values"          element={<ValuesHubPage />} />
+          <Route path="/secrets"         element={<BiblicalSecretsPage />} />
+          <Route path="/prayer"          element={<PrayerJournalPage />} />
+          <Route path="/prayer-guide"    element={<PrayerTab />} />
+          <Route path="/maps"            element={<BibleMapsPage />} />
+          <Route path="/search"          element={<DeepSearchPage />} />
+          <Route path="/name-dictionary" element={<NameDictionaryPage />} />
+          <Route path="/dreams"          element={<DreamInterpreterPage />} />
+          <Route path="*"                element={<NotFoundPage />} />
         </Routes>
       </main>
       <ConditionalFooter />

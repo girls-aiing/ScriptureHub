@@ -48,7 +48,8 @@ export default function Navbar({ toggleSlot }) {
   const isActive = (path) =>
     path === '/' ? location.pathname === '/' : location.pathname === path
 
-  const isDiscoveryActive = ['/did-you-know', '/secrets', '/maps'].includes(location.pathname)
+  // Updated to include /dreams in the discovery active tabs list
+  const isDiscoveryActive = ['/did-you-know', '/secrets', '/maps', '/name-dictionary', '/dreams'].includes(location.pathname)
   const isAiActive        = ['/ai', '/values', '/search'].includes(location.pathname)
   const isPrayerActive    = ['/prayer-guide', '/prayer', '/progress'].includes(location.pathname)
 
@@ -482,6 +483,25 @@ export default function Navbar({ toggleSlot }) {
                     <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Interactive maps &amp; timelines</div>
                   </div>
                 </Link>
+                <div className="dropdown-divider" />
+                <Link to="/name-dictionary" className={isActive('/name-dictionary') ? 'active' : ''}
+                  role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
+                  <span style={{ fontSize:'1.1rem' }}>📖</span>
+                  <div>
+                    <div style={{ fontWeight:'600', marginBottom:'2px' }}>Name Dictionary</div>
+                    <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Meaning &amp; origin of any name</div>
+                  </div>
+                </Link>
+                {/* Desktop Dropdown Link added for Dream Interpreter */}
+                <div className="dropdown-divider" />
+                <Link to="/dreams" className={isActive('/dreams') ? 'active' : ''}
+                  role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
+                  <span style={{ fontSize:'1.1rem' }}>🌙</span>
+                  <div>
+                    <div style={{ fontWeight:'600', marginBottom:'2px' }}>Dream Interpreter</div>
+                    <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Biblical meanings of dreams</div>
+                  </div>
+                </Link>
               </div>
             )}
           </li>
@@ -641,6 +661,17 @@ export default function Navbar({ toggleSlot }) {
             className={`mobile-sub-item${isActive('/maps') ? ' active' : ''}`}
             onClick={() => { closeMenu(); playNavClick() }}>
             🗺️ Bible Maps
+          </Link>
+          <Link to="/name-dictionary"
+            className={`mobile-sub-item${isActive('/name-dictionary') ? ' active' : ''}`}
+            onClick={() => { closeMenu(); playNavClick() }}>
+            📖 Name Dictionary
+          </Link>
+          {/* Mobile Menu Item added for Dream Interpreter */}
+          <Link to="/dreams"
+            className={`mobile-sub-item${isActive('/dreams') ? ' active' : ''}`}
+            onClick={() => { closeMenu(); playNavClick() }}>
+            🌙 Dream Interpreter
           </Link>
 
           <div className="navbar__mobile-divider" />

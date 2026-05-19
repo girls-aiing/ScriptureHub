@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 
 // ─────────────────────────────────────────────────────────────────
-// PAGE SCRIPTS
+// PAGE SCRIPTS & METRIC DATA CONFIGURATION
 // ─────────────────────────────────────────────────────────────────
 const SCRIPTS = {
   '/':             `Welcome to ScriptureHub — your sacred digital companion. Here on the home page, you will find your verse of the day, quick access to the Bible reader, and your personal growth dashboard. May your time here draw you closer to the Word of God.`,
@@ -37,6 +37,8 @@ const SCRIPTS = {
   '/games/connections': `Welcome to Daily Connections! Find four groups of four words that each share a hidden biblical connection. Think carefully — some connections are cleverly disguised.`,
   '/games/map':         `Welcome to Biblical Map Quest! Click on the correct spot on the ancient map to identify each sacred location I name. Learn the geography of the Holy Land!`,
   '/games/swordDrill':  `Welcome to Sword Drill! Type the correct Bible reference as fast as you can before the thirty second timer runs out. The Word of God is your sword — draw it quickly!`,
+  '/name-dictionary':   `Welcome to the Universal Lexicon. This is a scholarly treasury of historical names. Enter any name from any culture or language into the search archive above to uncover its ancient meanings, phonetic pronunciations, variants, and historical significance.`,
+  '/ai/dreams':         `Welcome to the Biblical Dream Interpreter. Simply write down your dream or describe its core symbols in detail. The AI will look through scriptural principles, historical context, and prophetic metaphors to help you discover if your dream carries a divine message.`
 }
 
 const SUBPAGE_SCRIPTS = {
@@ -44,25 +46,27 @@ const SUBPAGE_SCRIPTS = {
   'hymn-detail':  SCRIPTS['/bible/hymn-detail'],
   'singing-mode': `You are now in Singing Mode — a distraction free worship experience. Use the Previous and Next buttons to move between sections. Press Listen to hear the current section read aloud. Press Exit when you are finished. Sing with all your heart to the Lord!`,
   'books':        `You are back in the Bible Reader. Select a testament, then choose a book and chapter to begin reading.`,
+  'dreams':       SCRIPTS['/ai/dreams'],
 }
 
 const PAGE_NAMES = {
-  '/':             'Home',
-  '/bible':        'Bible Reader',
-  '/bible/hymns':  'Hymn Centre',
+  '/':               'Home',
+  '/bible':          'Bible Reader',
+  '/bible/hymns':    'Hymn Centre',
   '/bible/hymn-detail': 'Hymn Detail',
-  '/quizzes':      'Knowledge Hub',
-  '/ai':           'AI Consultant',
-  '/did-you-know': 'Did You Know',
-  '/games':        'Bible Games',
-  '/community':    'Community',
-  '/settings':     'Settings',
-  '/secrets':      'Biblical Secrets',
+  '/quizzes':       'Knowledge Hub',
+  '/ai/dreams':     'Dream Interpreter',
+  '/ai':            'AI Consultant',
+  '/did-you-know':  'Did You Know',
+  '/games':         'Bible Games',
+  '/community':     'Community',
+  '/settings':      'Settings',
+  '/secrets':       'Biblical Secrets',
   '/values':       'Values for Success',
-  '/maps':         'Bible Maps',
-  '/search':       'AI Deep Search',
-  '/prayer':       'Prayer Journal',
-  '/progress':     'Study Progress',
+  '/maps':          'Bible Maps',
+  '/search':        'AI Deep Search',
+  '/prayer':        'Prayer Journal',
+  '/progress':      'Study Progress',
   '/games/speedtyper':  'Speed Typer',
   '/games/swipe':       'Swipe True/False',
   '/games/fillblank':   'Fill the Blank',
@@ -79,6 +83,7 @@ const PAGE_NAMES = {
   '/games/connections': 'Daily Connections',
   '/games/map':         'Biblical Map Quest',
   '/games/swordDrill':  'Sword Drill',
+  '/name-dictionary':   'Universal Lexicon',
 }
 
 const SUBPAGE_NAMES = {
@@ -86,6 +91,7 @@ const SUBPAGE_NAMES = {
   'hymn-detail':  'Hymn Detail',
   'singing-mode': 'Singing Mode',
   'books':        'Bible Reader',
+  'dreams':       'Dream Interpreter',
 }
 
 const PREFERRED_VOICES = [
@@ -102,9 +108,7 @@ const PREFERRED_VOICES = [
 ]
 
 // ─────────────────────────────────────────────────────────────────
-// SINGLE GLOBAL ENGINE
-// Only ONE utterance ever plays at a time.
-// Every new engineSpeak() call cancels whatever is playing first.
+// SINGLE GLOBAL ENGINE CONFIG
 // ─────────────────────────────────────────────────────────────────
 const engine = {
   stopped:   true,
@@ -113,372 +117,364 @@ const engine = {
   currentId: 0,
 }
 
-function getVol()  { return parseFloat(localStorage.getItem('scripturehub_voice_volume') ?? '0.85') }
-function isMuted() { return localStorage.getItem('scripturehub_voice_muted') === 'true' }
-function isEnabled() {
-  try { const s = JSON.parse(localStorage.getItem('scripturehub_settings') ?? '{}'); return s.voiceGuide !== false }
-  catch { return true }
-}
+const getVol = () => parseFloat(localStorage.getItem('scripturehub_voice_volume') ?? '0.85');
+const isMuted = () => localStorage.getItem('scripturehub_voice_muted') === 'true';
+const isEnabled = () => {
+  try {
+    const s = JSON.parse(localStorage.getItem('scripturehub_settings') ?? '{}');
+    return s.voiceGuide !== false;
+  } catch {
+    return true;
+  }
+};
 
 function getBestVoice() {
-  const voices = window.speechSynthesis.getVoices()
+  if (!('speechSynthesis' in window)) return null;
+  const voices = window.speechSynthesis.getVoices();
   for (const name of PREFERRED_VOICES) {
-    const v = voices.find(v => v.name === name)
-    if (v) return v
+    const v = voices.find(v => v.name === name);
+    if (v) return v;
   }
-  return voices.find(v => v.lang.startsWith('en-GB'))
-      || voices.find(v => v.lang.startsWith('en'))
-      || voices[0] || null
+  return voices.find(v => v.lang.startsWith('en-GB')) ||
+         voices.find(v => v.lang.startsWith('en')) ||
+         voices[0] || null;
 }
 
 function splitIntoChunks(text, maxChars = 200) {
-  const sentences = text.match(/[^.!?]+[.!?]*/g) || [text]
-  const chunks = []
-  let current = ''
+  const sentences = text.match(/[^.!?]+[.!?]*/g) || [text];
+  const chunks = [];
+  let current = '';
   for (const s of sentences) {
     if ((current + s).length > maxChars && current.length > 0) {
-      chunks.push(current.trim())
-      current = s
+      chunks.push(current.trim());
+      current = s;
     } else {
-      current += s
+      current += s;
     }
   }
-  if (current.trim()) chunks.push(current.trim())
-  return chunks
+  if (current.trim()) chunks.push(current.trim());
+  return chunks;
 }
 
 function engineSpeak(text, onDone) {
-  if (!('speechSynthesis' in window)) return
-  if (!text || isMuted() || !isEnabled()) return
+  if (!('speechSynthesis' in window)) return;
+  if (!text || isMuted() || !isEnabled()) return;
 
-  // ── Step 1: Hard-stop whatever is currently playing ──
-  engine.stopped = true
-  engine.queue   = []
-  try { window.speechSynthesis.cancel() } catch {}
+  engine.stopped = true;
+  engine.queue   = [];
+  try { window.speechSynthesis.cancel(); } catch {}
 
-  // ── Step 2: Short gap so the browser fully processes the cancel ──
   setTimeout(() => {
-    const id = ++engine.currentId
-    engine.stopped  = false
-    engine.queue    = splitIntoChunks(text)
-    engine.chunkIdx = 0
+    const id = ++engine.currentId;
+    engine.stopped  = false;
+    engine.queue    = splitIntoChunks(text);
+    engine.chunkIdx = 0;
 
     function speakNext() {
-      if (engine.stopped || id !== engine.currentId) return
+      if (engine.stopped || id !== engine.currentId) return;
       if (engine.chunkIdx >= engine.queue.length) {
-        if (onDone) onDone()
-        return
+        if (onDone) onDone();
+        return;
       }
-      const chunk = engine.queue[engine.chunkIdx]
-      const utter = new SpeechSynthesisUtterance(chunk)
-      const voice = getBestVoice()
-      if (voice) utter.voice = voice
-      utter.rate   = 0.88
-      utter.pitch  = 1.0
-      utter.volume = getVol()
+      const chunk = engine.queue[engine.chunkIdx];
+      const utter = new SpeechSynthesisUtterance(chunk);
+      const voice = getBestVoice();
+      if (voice) utter.voice = voice;
+      utter.rate   = 0.88;
+      utter.pitch  = 1.0;
+      utter.volume = getVol();
 
       utter.onend = () => {
-        if (engine.stopped || id !== engine.currentId) return
-        engine.chunkIdx++
-        speakNext()
-      }
+        if (engine.stopped || id !== engine.currentId) return;
+        engine.chunkIdx++;
+        speakNext();
+      };
       utter.onerror = (e) => {
-        if (e.error === 'interrupted' || engine.stopped || id !== engine.currentId) return
-        engine.chunkIdx++
-        setTimeout(speakNext, 150)
-      }
-      try { window.speechSynthesis.speak(utter) } catch {}
+        if (e.error === 'interrupted' || engine.stopped || id !== engine.currentId) return;
+        engine.chunkIdx++;
+        setTimeout(speakNext, 150);
+      };
+      try { window.speechSynthesis.speak(utter); } catch {}
     }
 
     if (window.speechSynthesis.getVoices().length > 0) {
-      speakNext()
+      speakNext();
     } else {
       window.speechSynthesis.onvoiceschanged = () => {
-        window.speechSynthesis.onvoiceschanged = null
-        speakNext()
-      }
+        window.speechSynthesis.onvoiceschanged = null;
+        speakNext();
+      };
     }
-  }, 80)
+  }, 80);
 }
 
 function engineStop() {
-  engine.stopped = true
-  engine.queue   = []
-  engine.currentId++
-  try { window.speechSynthesis.cancel() } catch {}
+  engine.stopped = true;
+  engine.queue   = [];
+  engine.currentId++;
+  try { window.speechSynthesis.cancel(); } catch {}
 }
 
 // ─────────────────────────────────────────────────────────────────
-// PUBLIC EXPORTS
+// EXPORTS
 // ─────────────────────────────────────────────────────────────────
-export function speakText(text) { engineSpeak(text) }
-export function stopVoiceGuide() { engineStop() }
+export function speakText(text) { engineSpeak(text); }
+export function stopVoiceGuide() { engineStop(); }
 export function replayVoiceGuide(path) {
-  const text = SCRIPTS[path]
-    || SCRIPTS[Object.keys(SCRIPTS).find(k => path.startsWith(k) && k !== '/') || '']
-  if (text) engineSpeak(text)
+  const text = SCRIPTS[path] || SCRIPTS[Object.keys(SCRIPTS).find(k => path.startsWith(k) && k !== '/') || ''];
+  if (text) engineSpeak(text);
 }
 export function announceHymnView(subpage) {
-  const text = SUBPAGE_SCRIPTS[subpage]
-  if (text) engineSpeak(text)
+  const text = SUBPAGE_SCRIPTS[subpage];
+  if (text) engineSpeak(text);
 }
 
 // ─────────────────────────────────────────────────────────────────
-// POSITION HELPERS
-// ─────────────────────────────────────────────────────────────────
-function getDefaultPos() {
-  return { x: window.innerWidth - 80, y: window.innerHeight - 160 }
-}
-function getSavedPos() {
-  try {
-    const saved = JSON.parse(localStorage.getItem('scripturehub_vg_pos') ?? 'null')
-    if (saved && typeof saved.x === 'number' && typeof saved.y === 'number') return saved
-  } catch {}
-  return getDefaultPos()
-}
-
-// ─────────────────────────────────────────────────────────────────
-// AUTO-PLAY BOOTSTRAP
-// ─────────────────────────────────────────────────────────────────
-function tryAutoUnlock(onUnlocked) {
-  if (!('speechSynthesis' in window)) return
-  const silent  = new SpeechSynthesisUtterance(' ')
-  silent.volume = 0
-  let resolved  = false
-  const resolve = () => { if (resolved) return; resolved = true; onUnlocked() }
-  silent.onend   = resolve
-  silent.onerror = () => {
-    const events  = ['click', 'keydown', 'touchend', 'scroll']
-    const handler = () => { events.forEach(ev => document.removeEventListener(ev, handler)); resolve() }
-    events.forEach(ev => document.addEventListener(ev, handler, { once: true }))
-  }
-  try { window.speechSynthesis.cancel(); window.speechSynthesis.speak(silent) }
-  catch { silent.onerror() }
-}
-
-// ─────────────────────────────────────────────────────────────────
-// MAIN COMPONENT
+// MAIN VOICE GUIDE SYSTEM RUNTIME COMPONENT
 // ─────────────────────────────────────────────────────────────────
 export default function VoiceGuide() {
-  const location = useLocation()
+  const location = useLocation();
 
-  const [speaking,     setSpeaking]     = useState(false)
-  const [paused,       setPaused]       = useState(false)
-  const [muted,        setMuted]        = useState(() => isMuted())
-  const [volume,       setVolume]       = useState(() => getVol())
-  const [showPanel,    setShowPanel]    = useState(false)
-  const [unlocked,     setUnlocked]     = useState(false)
-  const [currentLabel, setCurrentLabel] = useState('')
+  const [speaking, setSpeaking] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [muted, setMuted] = useState(() => isMuted());
+  const [volume, setVolume] = useState(() => getVol());
+  const [showPanel, setShowPanel] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
+  const [currentLabel, setCurrentLabel] = useState('');
 
-  const [pos,      setPos]      = useState(() => getSavedPos())
-  const [dragging, setDragging] = useState(false)
+  const [pos, setPos] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('scripturehub_vg_pos') ?? 'null');
+      if (saved && typeof saved.x === 'number' && typeof saved.y === 'number') return saved;
+    } catch {}
+    return { x: window.innerWidth - 80, y: window.innerHeight - 160 };
+  });
+  const [dragging, setDragging] = useState(false);
 
-  const dragStart  = useRef(null)
-  const widgetRef  = useRef(null)
-  const prevPath   = useRef(null)   // null = not yet initialised
-  const pollRef    = useRef(null)
-  const hideRef    = useRef(null)
-  const replayText = useRef('')
-  const unlockedRef = useRef(false) // ref mirror of unlocked state for use inside closures
+  const dragStart = useRef(null);
+  const prevPath = useRef(null);
+  const pollRef = useRef(null);
+  const hideRef = useRef(null);
+  const replayText = useRef('');
+  const unlockedRef = useRef(false);
+  const activeSubpage = useRef(null);
+  
+  // Track deep paths that have fired speech on this unique entry visit cycle
+  const completedVisits = useRef(new Set());
 
-  if (!('speechSynthesis' in window)) return null
+  useEffect(() => { unlockedRef.current = unlocked; }, [unlocked]);
 
-  // ── Helper: find script for a path ──────────────────────────────
-  function getScript(path) {
-    if (SCRIPTS[path]) return SCRIPTS[path]
-    // Match longest prefix (e.g. /games/speedtyper before /games)
+  const getScript = (path) => {
+    if (SCRIPTS[path]) return SCRIPTS[path];
+    if ((path.startsWith('/ai/') && path !== '/ai/dreams' && path !== '/ai') || (path.startsWith('/bible/') && path !== '/bible')) return null;
     const key = Object.keys(SCRIPTS)
       .filter(k => k !== '/' && path.startsWith(k))
-      .sort((a, b) => b.length - a.length)[0]
-    return key ? SCRIPTS[key] : null
-  }
+      .sort((a, b) => b.length - a.length)[0];
+    return key ? SCRIPTS[key] : null;
+  };
 
-  // ── Helper: speak a page and update label ────────────────────────
-  function speakPage(path) {
-    const text = getScript(path)
-    if (!text) return
-    replayText.current = text
-    setCurrentLabel(PAGE_NAMES[path] || 'ScriptureHub')
-    engineSpeak(text)
-  }
+  const speakPage = (path) => {
+    const text = getScript(path);
+    if (!text) return;
+    replayText.current = text;
+    setCurrentLabel(PAGE_NAMES[path] || 'ScriptureHub');
+    engineSpeak(text);
+  };
 
-  // ── Persist position ─────────────────────────────────────────────
   useEffect(() => {
-    localStorage.setItem('scripturehub_vg_pos', JSON.stringify(pos))
-  }, [pos])
+    localStorage.setItem('scripturehub_vg_pos', JSON.stringify(pos));
+  }, [pos]);
 
-  // ── Keep widget inside window on resize ──────────────────────────
   useEffect(() => {
     const onResize = () => setPos(p => ({
-      x: Math.min(p.x, window.innerWidth  - 60),
+      x: Math.min(p.x, window.innerWidth - 60),
       y: Math.min(p.y, window.innerHeight - 60),
-    }))
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [])
+    }));
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
-  // ── Listen for subpage announcements (hymns, singing mode etc.) ──
   useEffect(() => {
     const onSubpage = (e) => {
-      const subpage = e.detail
-      const text    = SUBPAGE_SCRIPTS[subpage]
-      const label   = SUBPAGE_NAMES[subpage] || 'Bible Reader'
-      if (!text || isMuted() || !isEnabled()) return
-      replayText.current = text
-      setCurrentLabel(label)
-      if (unlockedRef.current) engineSpeak(text)
-    }
-    window.addEventListener('vg:subpage', onSubpage)
-    return () => window.removeEventListener('vg:subpage', onSubpage)
-  }, [])
+      const subpage = e.detail;
+      activeSubpage.current = subpage;
+      
+      const text = SUBPAGE_SCRIPTS[subpage];
+      const label = SUBPAGE_NAMES[subpage] || 'Bible Reader';
+      
+      engineStop();
+      
+      if (!text || isMuted() || !isEnabled()) return;
+      replayText.current = text;
+      setCurrentLabel(label);
+      
+      if (unlockedRef.current) {
+        setTimeout(() => {
+          if (activeSubpage.current === subpage) {
+            engineSpeak(text);
+          }
+        }, 150);
+      }
+    };
+    window.addEventListener('vg:subpage', onSubpage);
+    return () => window.removeEventListener('vg:subpage', onSubpage);
+  }, []);
 
-  // ── Drag: mouse ──────────────────────────────────────────────────
-  function onMouseDown(e) {
-    if (e.target.closest('button') || e.target.closest('input')) return
-    e.preventDefault()
-    dragStart.current = { mx: e.clientX, my: e.clientY, ox: pos.x, oy: pos.y }
-    setDragging(true)
-  }
+  const handlePointerDown = (e) => {
+    if (e.target.closest('button') || e.target.closest('input')) return;
+    e.preventDefault();
+    dragStart.current = { mx: e.clientX, my: e.clientY, ox: pos.x, oy: pos.y };
+    setDragging(true);
+  };
+
   useEffect(() => {
-    const onMove = (e) => {
-      if (!dragStart.current) return
+    const handlePointerMove = (e) => {
+      if (!dragStart.current) return;
       setPos({
-        x: Math.max(0, Math.min(window.innerWidth  - 60, dragStart.current.ox + (e.clientX - dragStart.current.mx))),
+        x: Math.max(0, Math.min(window.innerWidth - 60, dragStart.current.ox + (e.clientX - dragStart.current.mx))),
         y: Math.max(0, Math.min(window.innerHeight - 60, dragStart.current.oy + (e.clientY - dragStart.current.my))),
-      })
+      });
+    };
+    const handlePointerUp = () => {
+      dragStart.current = null;
+      setDragging(false);
+    };
+
+    if (dragging) {
+      window.addEventListener('pointermove', handlePointerMove);
+      window.addEventListener('pointerup', handlePointerUp);
     }
-    const onUp = () => { dragStart.current = null; setDragging(false) }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup',   onUp)
-    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
-  }, [])
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [dragging]);
 
-  // ── Drag: touch ──────────────────────────────────────────────────
-  function onTouchStart(e) {
-    if (e.target.closest('button') || e.target.closest('input')) return
-    const t = e.touches[0]
-    dragStart.current = { mx: t.clientX, my: t.clientY, ox: pos.x, oy: pos.y }
-    setDragging(true)
-  }
   useEffect(() => {
-    const onMove = (e) => {
-      if (!dragStart.current) return
-      e.preventDefault()
-      const t = e.touches[0]
-      setPos({
-        x: Math.max(0, Math.min(window.innerWidth  - 60, dragStart.current.ox + (t.clientX - dragStart.current.mx))),
-        y: Math.max(0, Math.min(window.innerHeight - 60, dragStart.current.oy + (t.clientY - dragStart.current.my))),
-      })
+    if (!('speechSynthesis' in window)) return;
+    const initialPath = location.pathname;
+    prevPath.current = initialPath;
+
+    const silent = new SpeechSynthesisUtterance(' ');
+    silent.volume = 0;
+    let resolved = false;
+    const unlockAudio = () => {
+      if (resolved) return;
+      resolved = true;
+      setUnlocked(true);
+      if (isMuted() || !isEnabled()) return;
+      
+      if (initialPath === '/ai/dreams') {
+        completedVisits.current.add('/ai/dreams');
+      }
+      setTimeout(() => speakPage(initialPath), 500);
+    };
+
+    silent.onend = unlockAudio;
+    silent.onerror = () => {
+      const events = ['click', 'keydown', 'pointerup', 'scroll'];
+      const autoUnlockHandler = () => {
+        events.forEach(ev => document.removeEventListener(ev, autoUnlockHandler));
+        unlockAudio();
+      };
+      events.forEach(ev => document.addEventListener(ev, autoUnlockHandler, { once: true }));
+    };
+    try { window.speechSynthesis.cancel(); window.speechSynthesis.speak(silent); }
+    catch { silent.onerror(); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const path = location.pathname;
+    if (prevPath.current === null || path === prevPath.current) return;
+    prevPath.current = path;
+
+    engineStop();
+    if (muted || !unlockedRef.current || !isEnabled()) return;
+
+    // Direct targeted execution strategy for Dream Interpreter path
+    if (path === '/ai/dreams') {
+      activeSubpage.current = null;
+      if (!completedVisits.current.has(path)) {
+        completedVisits.current.add(path);
+        const routeTimeout = setTimeout(() => speakPage(path), 250);
+        return () => clearTimeout(routeTimeout);
+      }
+      return; 
     }
-    const onEnd = () => { dragStart.current = null; setDragging(false) }
-    window.addEventListener('touchmove', onMove, { passive: false })
-    window.addEventListener('touchend',  onEnd)
-    return () => { window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onEnd) }
-  }, [])
 
-  // ── Initial load: unlock audio, then speak current page ──────────
-  useEffect(() => {
-    const initialPath = location.pathname
-    prevPath.current  = initialPath
+    // Reset lock logic when user navigates completely away from the functional subpath
+    if (path !== '/ai/dreams') {
+      completedVisits.current.delete('/ai/dreams');
+    }
 
-    tryAutoUnlock(() => {
-      unlockedRef.current = true
-      setUnlocked(true)
-      if (isMuted() || !isEnabled()) return
-      // Delay slightly so the page has fully rendered
-      setTimeout(() => speakPage(initialPath), 500)
-    })
+    // Direct routing parameters ignore generic deep child routes
+    if ((path.startsWith('/ai/') && path !== '/ai') || (path.startsWith('/bible/') && path !== '/bible') || path.split('/').filter(Boolean).length > 1) {
+      return;
+    }
+
+    activeSubpage.current = null;
+    const routeTimeout = setTimeout(() => speakPage(path), 250);
+    return () => clearTimeout(routeTimeout);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [location.pathname, muted]);
 
-  // ── Route change: ALWAYS stop old guide and start new one ────────
-  useEffect(() => {
-    const path = location.pathname
-
-    // Skip the very first render (handled by the initial load effect above)
-    if (prevPath.current === null) return
-    // Skip if the path hasn't actually changed
-    if (path === prevPath.current) return
-
-    prevPath.current = path
-
-    // Stop the old page's guide immediately
-    engineStop()
-
-    if (muted || !unlockedRef.current || !isEnabled()) return
-
-    // Start the new page's guide after a short gap
-    setTimeout(() => speakPage(path), 400)
-
-  // location.pathname is the only dependency that should trigger this
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname])
-
-  // ── Keep unlockedRef in sync with unlocked state ─────────────────
-  useEffect(() => { unlockedRef.current = unlocked }, [unlocked])
-
-  // ── Poll speech state for UI ──────────────────────────────────────
   useEffect(() => {
     pollRef.current = setInterval(() => {
-      setSpeaking(window.speechSynthesis.speaking && !window.speechSynthesis.paused)
-      setPaused(window.speechSynthesis.paused)
-    }, 250)
-    return () => clearInterval(pollRef.current)
-  }, [])
-
-  // ── Cleanup on unmount ────────────────────────────────────────────
-  useEffect(() => {
+      if ('speechSynthesis' in window) {
+        setSpeaking(window.speechSynthesis.speaking && !window.speechSynthesis.paused);
+        setPaused(window.speechSynthesis.paused);
+      }
+    }, 250);
     return () => {
-      engineStop()
-      clearInterval(pollRef.current)
-      clearTimeout(hideRef.current)
-    }
-  }, [])
+      clearInterval(pollRef.current);
+      engineStop();
+      clearTimeout(hideRef.current);
+    };
+  }, []);
 
-  // ── Controls ──────────────────────────────────────────────────────
-  function toggleMute() {
-    const next = !muted
-    setMuted(next)
-    localStorage.setItem('scripturehub_voice_muted', String(next))
-    if (next) engineStop()
-    else {
-      // Unmuting — speak the current page immediately
-      setTimeout(() => speakPage(location.pathname), 300)
-    }
-  }
+  const toggleMute = () => {
+    const next = !muted;
+    setMuted(next);
+    localStorage.setItem('scripturehub_voice_muted', String(next));
+    if (next) engineStop();
+    else setTimeout(() => speakPage(location.pathname), 300);
+  };
 
-  function handleVolume(e) {
-    const val = parseFloat(e.target.value)
-    setVolume(val)
-    localStorage.setItem('scripturehub_voice_volume', String(val))
-  }
+  const handleVolume = (e) => {
+    const val = parseFloat(e.target.value);
+    setVolume(val);
+    localStorage.setItem('scripturehub_voice_volume', String(val));
+  };
 
-  function handlePlayPause() {
-    if (paused)        { window.speechSynthesis.resume(); setPaused(false) }
-    else if (speaking) { window.speechSynthesis.pause();  setPaused(true)  }
-    else               { if (replayText.current) engineSpeak(replayText.current) }
-  }
+  const handlePlayPause = () => {
+    if (!('speechSynthesis' in window)) return;
+    if (paused) { window.speechSynthesis.resume(); setPaused(false); }
+    else if (speaking) { window.speechSynthesis.pause(); setPaused(true); }
+    else if (replayText.current) { engineSpeak(replayText.current); }
+  };
 
-  function handleStop() {
-    engineStop(); setSpeaking(false); setPaused(false); setShowPanel(false)
-  }
+  const handleStop = () => {
+    engineStop(); setSpeaking(false); setPaused(false); setShowPanel(false);
+  };
 
-  function handleReplay() {
-    if (replayText.current) engineSpeak(replayText.current)
-    else speakPage(location.pathname)
-    setShowPanel(false)
-  }
+  const handleReplay = () => {
+    if (replayText.current) engineSpeak(replayText.current);
+    else speakPage(location.pathname);
+    setShowPanel(false);
+  };
 
-  const accent   = (() => {
-    try { return JSON.parse(localStorage.getItem('scripturehub_settings') ?? '{}').accentColor || '#c9a84c' }
-    catch { return '#c9a84c' }
-  })()
-  const pageName = currentLabel || PAGE_NAMES[location.pathname] || 'ScriptureHub'
-  const isActive = speaking || paused
+  if (!('speechSynthesis' in window)) return null;
 
-  // ─────────────────────────────────────────────────────────────────
-  // RENDER
-  // ─────────────────────────────────────────────────────────────────
+  const accent = (() => {
+    try { return JSON.parse(localStorage.getItem('scripturehub_settings') ?? '{}').accentColor || '#c9a84c'; }
+    catch { return '#c9a84c'; }
+  })();
+
+  const pageName = currentLabel || PAGE_NAMES[location.pathname] || 'ScriptureHub';
+  const isActive = speaking || paused;
+
   return (
     <>
       <style>{`
@@ -495,6 +491,7 @@ export default function VoiceGuide() {
           display: flex; flex-direction: column;
           align-items: flex-end; gap: 0.45rem;
           font-family: Georgia, serif; user-select: none;
+          touch-action: none;
         }
         .vg-drag-handle {
           width: 100%; display: flex; justify-content: center;
@@ -502,22 +499,19 @@ export default function VoiceGuide() {
           cursor: grab; opacity: 0.4; transition: opacity 0.2s;
         }
         .vg-drag-handle:hover { opacity: 1; }
-        .vg-widget.dragging   { cursor: grabbing !important; }
+        .vg-widget.dragging { cursor: grabbing !important; }
         .vg-widget.dragging * { cursor: grabbing !important; }
         .vg-ctrl-btn { transition: opacity 0.18s, transform 0.18s; }
         .vg-ctrl-btn:hover { opacity: 0.85; transform: scale(1.08); }
       `}</style>
 
       <div
-        ref={widgetRef}
         className={`vg-widget${dragging ? ' dragging' : ''}`}
-        style={{ left: pos.x + 'px', top: pos.y + 'px' }}
+        style={{ left: `${pos.x}px`, top: `${pos.y}px` }}
       >
-        {/* ── Drag handle ── */}
         <div
           className="vg-drag-handle"
-          onMouseDown={onMouseDown}
-          onTouchStart={onTouchStart}
+          onPointerDown={handlePointerDown}
           title="Drag to move"
         >
           <div style={{ display:'flex', flexDirection:'column', gap:'3px' }}>
@@ -530,7 +524,6 @@ export default function VoiceGuide() {
           </div>
         </div>
 
-        {/* ── Active speaking card ── */}
         {isActive && (
           <div style={{
             background:'rgba(10,5,2,0.97)', border:`1px solid ${accent}88`,
@@ -576,11 +569,10 @@ export default function VoiceGuide() {
           </div>
         )}
 
-        {/* ── Hover panel (idle) ── */}
         {showPanel && !isActive && (
           <div
             onMouseEnter={() => clearTimeout(hideRef.current)}
-            onMouseLeave={() => { hideRef.current = setTimeout(() => setShowPanel(false), 400) }}
+            onMouseLeave={() => { hideRef.current = setTimeout(() => setShowPanel(false), 400); }}
             style={{
               background:'rgba(10,5,2,0.97)', border:`1px solid rgba(201,168,76,0.4)`,
               borderRadius:'14px', padding:'0.95rem 1.1rem',
@@ -614,11 +606,10 @@ export default function VoiceGuide() {
           </div>
         )}
 
-        {/* ── Mute / status pill ── */}
         <button
           onClick={toggleMute}
-          onMouseEnter={() => { clearTimeout(hideRef.current); if (!isActive) setShowPanel(true) }}
-          onMouseLeave={() => { hideRef.current = setTimeout(() => setShowPanel(false), 1000) }}
+          onMouseEnter={() => { clearTimeout(hideRef.current); if (!isActive) setShowPanel(true); }}
+          onMouseLeave={() => { hideRef.current = setTimeout(() => setShowPanel(false), 1000); }}
           title={muted ? 'Voice Guide is muted — click to unmute' : 'Click to mute Voice Guide'}
           style={{
             background:'rgba(10,5,2,0.88)',
@@ -641,12 +632,9 @@ export default function VoiceGuide() {
         </button>
       </div>
     </>
-  )
+  );
 }
 
-// ─────────────────────────────────────────────────────────────────
-// CTRL BUTTON
-// ─────────────────────────────────────────────────────────────────
 function CtrlBtn({ onClick, color, title, children }) {
   return (
     <button onClick={onClick} title={title} className="vg-ctrl-btn" style={{
@@ -658,5 +646,5 @@ function CtrlBtn({ onClick, color, title, children }) {
     }}>
       {children}
     </button>
-  )
+  );
 }
