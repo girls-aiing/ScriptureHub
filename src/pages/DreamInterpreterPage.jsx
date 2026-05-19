@@ -28,6 +28,12 @@ export default function DreamInterpreterPage() {
   const [error, setError] = useState('');
   const [history, setHistory] = useState([]);
 
+  // Voice Recording Hook States
+  const [isRecording, setIsRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+
   // Load history from localStorage on mount
   useEffect(() => {
     const savedHistory = localStorage.getItem('dream_history');
@@ -39,6 +45,80 @@ export default function DreamInterpreterPage() {
       }
     }
   }, []);
+
+  // START RECORDING AUDIO
+  const startRecording = async () => {
+    setError('');
+    audioChunksRef.current = [];
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        // Stop all audio tracks from stream to release the mic light indicator
+        stream.getTracks().forEach(track => track.stop());
+        
+        // Process the captured audio blob
+        await transcribeAudio(audioBlob);
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Microphone access error:", err);
+      setError("Could not access microphone. Please check your browser permissions.");
+    }
+  };
+
+  // STOP RECORDING AUDIO
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  // TRANSCRIBE VIA GROQ WHISPER API
+  const transcribeAudio = async (audioBlob) => {
+    setTranscribing(true);
+    setError('');
+    try {
+      const formData = new FormData();
+      formData.append('file', audioBlob, 'dream_audio.wav');
+      formData.append('model', 'whisper-large-v3');
+
+      const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) throw new Error('Audio transcription service failed.');
+
+      const data = await response.json();
+      if (data.text) {
+        // Append transcribed voice text to existing text or update it
+        setDreamInput(prev => prev ? `${prev} ${data.text}` : data.text);
+      } else {
+        setError('No speech could be clearly detected. Please try speaking closer to your device.');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Failed to convert your recorded voice into text. Please try typing your vision.');
+    } finally {
+      setTranscribing(false);
+    }
+  };
 
   const handleInterpret = async (e) => {
     if (e) e.preventDefault();
@@ -73,7 +153,6 @@ export default function DreamInterpreterPage() {
       
       setResult(parsedResult);
 
-      // Save to local history state and storage
       const newHistoryItem = {
         id: Date.now(),
         date: new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
@@ -81,7 +160,7 @@ export default function DreamInterpreterPage() {
         interpretationData: parsedResult
       };
       
-      const updatedHistory = [newHistoryItem, ...history].slice(0, 10); // keep last 10 entries
+      const updatedHistory = [newHistoryItem, ...history].slice(0, 10);
       setHistory(updatedHistory);
       localStorage.setItem('dream_history', JSON.stringify(updatedHistory));
 
@@ -126,20 +205,63 @@ export default function DreamInterpreterPage() {
         
         {/* MAIN WORKSPACE */}
         <div>
-          {/* INPUT FORM CONTAINER */}
           <div style={{ background: '#ffffff', border: '1px solid rgba(201,168,76,0.18)', borderRadius: '16px', padding: '2rem', boxShadow: '0 10px 35px rgba(201,168,76,0.06)', marginBottom: '2.5rem' }}>
             <form onSubmit={handleInterpret}>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#c9a84c', marginBottom: '0.75rem', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                Describe Your Vision
-              </label>
+              
+              {/* Form Label and Audio Record Toolbar Container */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                <label style={{ fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#c9a84c', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  Describe Your Vision
+                </label>
+                
+                {/* MICROPHONE/VOICE CONTROLS */}
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {!isRecording ? (
+                    <button
+                      type="button"
+                      onClick={startRecording}
+                      disabled={transcribing || loading}
+                      style={{
+                        background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.3)',
+                        borderRadius: '20px', padding: '0.35rem 0.85rem', fontSize: '0.8rem',
+                        fontWeight: '600', color: '#7a5000', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: '0.35rem',
+                        fontFamily: 'system-ui, -apple-system, sans-serif', transition: 'all 0.2s',
+                        opacity: transcribing ? 0.6 : 1
+                      }}
+                    >
+                      <span>🎙️</span> {transcribing ? 'Converting Voice...' : 'Record Spoken Dream'}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={stopRecording}
+                      style={{
+                        background: '#c0392b', border: 'none',
+                        borderRadius: '20px', padding: '0.35rem 0.85rem', fontSize: '0.8rem',
+                        fontWeight: '700', color: '#ffffff', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: '0.35rem',
+                        fontFamily: 'system-ui, -apple-system, sans-serif',
+                        boxShadow: '0 0 10px rgba(192,57,43,0.4)'
+                      }}
+                    >
+                      <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#fff', animation: 'pulse 0.8s infinite alternate' }} />
+                      Stop Recording
+                    </button>
+                  )}
+                </div>
+              </div>
+
               <textarea
                 value={dreamInput}
                 onChange={(e) => setDreamInput(e.target.value)}
-                placeholder="Provide as many details, emotions, or specific objects from your dream as you can remember..."
+                placeholder={isRecording ? "Listening to your voice... Speak clearly into your device microphone." : "Provide as many details, emotions, or specific objects from your dream as you can remember..."}
                 rows={5}
+                disabled={isRecording}
                 style={{
                   width: '100%', padding: '1.2rem', borderRadius: '12px',
-                  border: '1px solid rgba(201,168,76,0.3)', background: 'rgba(201,168,76,0.02)',
+                  border: isRecording ? '1px solid #c0392b' : '1px solid rgba(201,168,76,0.3)',
+                  background: isRecording ? 'rgba(192,57,43,0.01)' : 'rgba(201,168,76,0.02)',
                   fontSize: '1.05rem', color: '#1a1105', outline: 'none',
                   resize: 'vertical', fontFamily: 'Georgia, serif', boxSizing: 'border-box',
                   lineHeight: '1.6', transition: 'all 0.2s'
@@ -147,7 +269,7 @@ export default function DreamInterpreterPage() {
               />
               <button
                 type="submit"
-                disabled={loading || !dreamInput.trim()}
+                disabled={loading || isRecording || transcribing || !dreamInput.trim()}
                 style={{
                   width: '100%', padding: '1rem', marginTop: '1rem',
                   background: '#1a1105', color: '#fcf9f2', border: 'none',
@@ -155,7 +277,7 @@ export default function DreamInterpreterPage() {
                   letterSpacing: '0.02em', cursor: 'pointer', transition: 'all 0.2s',
                   fontFamily: 'system-ui, -apple-system, sans-serif',
                   boxShadow: '0 4px 12px rgba(26,17,5,0.15)',
-                  opacity: (loading || !dreamInput.trim()) ? 0.5 : 1
+                  opacity: (loading || isRecording || transcribing || !dreamInput.trim()) ? 0.5 : 1
                 }}
               >
                 {loading ? 'Consulting Biblical Archetypes...' : 'Discern Spiritual Translation'}
@@ -229,9 +351,9 @@ export default function DreamInterpreterPage() {
         {/* SIDE PANEL HISTORY INVENTORY */}
         {history.length > 0 && (
           <div style={{ background: '#fdfcf9', border: '1px solid rgba(201,168,76,0.2)', borderRadius: '14px', padding: '1.25rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid rgba(201,168,76,0.15)', paddingBottom: '0.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid rgba(201,168,76,0.15)', paddingBottom: '0.5rem' }}>
               <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#665743', fontFamily: 'system-ui, -apple-system, sans-serif' }}>RECENT VISIONS</span>
-              <button onClick={clearHistory} style={{ background: 'none', border: 'none', color: '#c0392b', fontSize: '0.75rem', cursor: 'pointer', fontFamily: 'system-ui, -apple-system, sans-serif' }}>Clear</button>
+              <button type="button" onClick={clearHistory} style={{ background: 'none', border: 'none', color: '#c0392b', fontSize: '0.75rem', cursor: 'pointer', fontFamily: 'system-ui, -apple-system, sans-serif' }}>Clear</button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {history.map((item) => (
@@ -259,6 +381,15 @@ export default function DreamInterpreterPage() {
         )}
 
       </div>
+
+      {/* Embedded Animation Keyframe for Voice Recording Pulse */}
+      <style>{`
+        @keyframes pulse {
+          0% { transform: scale(0.85); opacity: 0.5; }
+          100% { transform: scale(1.15); opacity: 1; }
+        }
+      `}</style>
+
     </div>
   );
 }

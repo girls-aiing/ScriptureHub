@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 
 const API_KEY = import.meta.env.VITE_GROQ_API_KEY;
 
@@ -26,257 +26,407 @@ export default function NameDictionaryPage() {
   const [error, setError] = useState("");
   const [expandedStep, setExpandedStep] = useState(0);
 
-  // NEW: Triggers the Voice Guide welcome sequence on page mount
+  // Voice Recording & Media States
+  const [isRecording, setIsRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+
+  // Triggers the Voice Guide welcome sequence on page mount
   useEffect(() => {
-    // This empty effect ensures that the global VoiceGuide component 
-    // detects the route change and plays the corresponding path script.
-    window.scrollTo(0, 0);
+    window.dispatchEvent(new CustomEvent('vg:subpage', { detail: 'names' }));
   }, []);
 
-  const searchName = useCallback(async (name) => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
+  // START AUDIO RECORDING
+  const startRecording = async () => {
+    setError("");
+    audioChunksRef.current = [];
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/wav" });
+        // Release mic resource light
+        stream.getTracks().forEach((track) => track.stop());
+        
+        // Transcribe captured audio via Groq Whisper API
+        await transcribeAudio(audioBlob);
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Microphone access error:", err);
+      setError("Unable to access microphone. Please confirm browser permissions.");
+    }
+  };
+
+  // STOP AUDIO RECORDING
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  // SEND AUDIO BLOB TO GROQ WHISPER API
+  const transcribeAudio = async (audioBlob) => {
+    setTranscribing(true);
+    setError("");
+    try {
+      const formData = new FormData();
+      formData.append("file", audioBlob, "name_input.wav");
+      formData.append("model", "whisper-large-v3");
+
+      const response = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${API_KEY}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error("Audio transcription service failed.");
+
+      const data = await response.json();
+      if (data.text) {
+        // Clear punctuation/spaces if Whisper returns extra symbols for single spoken names
+        const transcribedName = data.text.replace(/[.#,?!]/g, "").trim();
+        setQuery(transcribedName);
+      } else {
+        setError("No clear speech detected. Please speak closer to your microphone.");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to convert speech to text. Please try typing the name manually.");
+    } finally {
+      setTranscribing(false);
+    }
+  };
+
+  const handleSearch = useCallback(async (targetQuery) => {
+    const activeQuery = targetQuery || query;
+    if (!activeQuery.trim()) return;
+
     setLoading(true);
     setError("");
     setResult(null);
+    setExpandedStep(0);
+
     try {
       const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${API_KEY}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${API_KEY}`,
+        },
         body: JSON.stringify({
           model: "llama-3.3-70b-versatile",
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: `Analyze the name: "${activeQuery}"` },
+          ],
           temperature: 0.3,
-          messages: [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: `Examine the name: ${trimmed}` }],
-          response_format: { type: "json_object" }
+          response_format: { type: "json_object" },
         }),
       });
-      const data = await response.json();
-      const parsed = JSON.parse(data.choices[0].message.content);
-      setResult(parsed);
+
+      if (!response.ok) throw new Error("Server responded with an error.");
+
+      const rawJson = await response.json();
+      const content = JSON.parse(rawJson.choices[0].message.content);
+      setResult(content);
     } catch (err) {
-      setError("The archives are currently unavailable. Please try again.");
+      setError("Failed to retrieve name analysis. Please try again later.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [query]);
 
   return (
-    <div style={styles.bookContainer}>
-      <style>{webFonts}</style>
+    <div style={styles.container}>
+      {/* Title Header */}
+      <h1 style={styles.title}>Etymology & Name Lexicon</h1>
+      <p style={styles.subtitle}>
+        Discover the profound origins, variant paths, and scriptural weights behind chosen names.
+      </p>
 
-      {/* --- Book Header --- */}
-      <div style={styles.bookHeader}>
-        <h1 style={styles.bookTitle}>The Universal Lexicon</h1>
-        <p style={styles.bookSubtitle}>A scholarly treasury of names and their ancient origins</p>
-        <div style={styles.goldDivider}>✦ ✦ ✦</div>
-      </div>
-
-      {/* --- Search Quill Section --- */}
-      <form onSubmit={(e) => { e.preventDefault(); searchName(query); }} style={styles.searchSection}>
-        <div style={styles.inputWrapper}>
+      {/* Input Search Controls Container with Recording Buttons */}
+      <div style={styles.searchBox}>
+        <div style={{ display: "flex", gap: "0.5rem", width: "100%", alignItems: "center" }}>
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Enter a name to examine..."
-            style={styles.quillInput}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            placeholder={isRecording ? "Listening to your voice..." : "Enter or speak a name..."}
+            disabled={isRecording}
+            style={{
+              ...styles.input,
+              borderColor: isRecording ? "#c0392b" : "#2c1e14",
+              backgroundColor: isRecording ? "rgba(192,57,43,0.02)" : "#fff"
+            }}
           />
-          <button type="submit" disabled={loading} style={styles.examineBtn}>
-            {loading ? "Consulting Archives..." : "Examine Name"}
+
+          {/* Voice Input Action Button Toggle */}
+          {!isRecording ? (
+            <button
+              onClick={startRecording}
+              disabled={transcribing || loading}
+              title="Record voice input"
+              style={{
+                ...styles.micButton,
+                opacity: transcribing ? 0.6 : 1
+              }}
+            >
+              🎙️ {transcribing && "..."}
+            </button>
+          ) : (
+            <button
+              onClick={stopRecording}
+              title="Stop recording"
+              style={styles.stopMicButton}
+            >
+              🛑
+            </button>
+          )}
+
+          <button onClick={() => handleSearch()} disabled={loading || isRecording} style={styles.button}>
+            {loading ? "Analyzing..." : "Examine"}
           </button>
         </div>
-        <div style={styles.tagRow}>
-          {PLACEHOLDER_NAMES.map(n => (
-            <span key={n} onClick={() => { setQuery(n); searchName(n); }} style={styles.miniTag}>{n}</span>
+
+        {/* Suggestion Chips */}
+        <div style={styles.suggestionsContainer}>
+          <span style={{ fontSize: "0.9rem", color: "#666" }}>Inspirations: </span>
+          {PLACEHOLDER_NAMES.map((name) => (
+            <button
+              key={name}
+              onClick={() => {
+                setQuery(name);
+                handleSearch(name);
+              }}
+              disabled={loading || isRecording}
+              style={styles.chip}
+            >
+              {name}
+            </button>
           ))}
         </div>
-      </form>
+      </div>
 
-      {/* --- Result Page --- */}
+      {/* Error Output Banner */}
+      {error && <div style={styles.errorCard}>⚠️ {error}</div>}
+
+      {/* Results Workspace Panel */}
       {result && (
-        <div style={styles.pagePaper}>
-          <div style={styles.pageInner}>
-            
-            <div style={styles.nameHeader}>
-              <span style={styles.dropCap}>{result.name.charAt(0)}</span>
-              <div>
-                <h2 style={styles.entryName}>{result.name}</h2>
-                <p style={styles.entryPronounce}>{result.pronunciation} — {result.origin.language}</p>
-              </div>
+        <div style={styles.resultContainer}>
+          <div style={styles.entryHeader}>
+            <h2 style={styles.entryTitle}>{result.name}</h2>
+            <span style={styles.pronunciation}>/ {result.pronunciation} /</span>
+          </div>
+
+          <div style={styles.originGrid}>
+            <div style={styles.originBox}>
+              <strong>Language:</strong> {result.origin.language}
             </div>
-
-            <p style={styles.entryMeaning}>{result.meaning}</p>
-
-            <div style={styles.originGrid}>
-              <div style={styles.originBox}><strong>Language:</strong> {result.origin.language}</div>
-              <div style={styles.originBox}><strong>Culture:</strong> {result.origin.culture}</div>
-              <div style={styles.originBox}><strong>Era:</strong> {result.origin.period}</div>
+            <div style={styles.originBox}>
+              <strong>Culture:</strong> {result.origin.culture}
             </div>
-
-            {result.biblicalConnection && (
-              <div style={styles.scriptureNote}>
-                <h4 style={styles.noteTitle}>Scriptural Context</h4>
-                <p>{result.biblicalConnection}</p>
-              </div>
-            )}
-
-            <div style={styles.footerInfo}>
-              <strong>Historical Bearers:</strong> {result.famousBearers.join(", ")}
-            </div>
-
-            {/* Steps as Book Chapters */}
-            <div style={styles.chapterSection}>
-                <h3 style={styles.chapterHeading}>Etymological Breakdown</h3>
-                {result.steps.map((s, i) => (
-                    <div key={i} style={styles.chapterItem}>
-                        <h4 style={styles.chapterSub}>Chapter {i+1}: {s.title}</h4>
-                        <p style={styles.chapterText}>{s.detail}</p>
-                    </div>
-                ))}
+            <div style={styles.originBox}>
+              <strong>Era Period:</strong> {result.origin.period}
             </div>
           </div>
-        </div>
-      )}
 
-      {error && (
-        <div style={{ color: "#e74c3c", textAlign: "center", margin: "1.5rem 0", fontSize: "1.1rem" }}>
-          {error}
-        </div>
-      )}
+          <p style={styles.entryMeaning}>{result.meaning}</p>
 
-      {!result && !loading && !error && (
-        <div style={styles.emptyState}>
-          <div style={styles.bigIcon}>📜</div>
-          <p>The pages are blank. Enter a name above to begin your study.</p>
+          {result.biblicalConnection && (
+            <div style={styles.scriptureNote}>
+              <h4 style={styles.noteTitle}>Scriptural Profile</h4>
+              <p style={{ margin: 0, fontSize: "1.1rem", lineHeight: "1.6" }}>{result.biblicalConnection}</p>
+            </div>
+          )}
+
+          {/* Related variants & notable bearers */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem", marginBottom: "3rem" }}>
+            <div>
+              <h3 style={styles.subHeading}>Morphological Variants</h3>
+              <ul style={styles.list}>
+                {result.variants.map((v, i) => (
+                  <li key={i} style={styles.listItem}>{v}</li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3 style={styles.subHeading}>Notable Chronological Bearers</h3>
+              <ul style={styles.list}>
+                {result.famousBearers.map((b, i) => (
+                  <li key={i} style={styles.listItem}>{b}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Interactive Breakdown Steps */}
+          {result.steps && result.steps.length > 0 && (
+            <div style={styles.chapterSection}>
+              <h3 style={styles.chapterHeading}>Lexical Breakdown & Analysis</h3>
+              <div style={styles.accordionContainer}>
+                {result.steps.map((step, index) => {
+                  const isExpanded = expandedStep === index;
+                  return (
+                    <div key={index} style={styles.accordionItem}>
+                      <button onClick={() => setExpandedStep(index)} style={styles.accordionHeader}>
+                        <span style={styles.accordionTitle}>
+                          {index + 1}. {step.title}
+                        </span>
+                        <span>{isExpanded ? "▲" : "▼"}</span>
+                      </button>
+                      {isExpanded && <div style={styles.accordionContent}>{step.detail}</div>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-const webFonts = `
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
-`;
-
 const styles = {
-  bookContainer: {
-    maxWidth: "850px",
-    margin: "2rem auto",
-    padding: "3rem",
-    backgroundColor: "#2c1e14",
-    borderRadius: "15px",
-    boxShadow: "0 20px 60px rgba(0,0,0,0.8), inset 0 0 100px rgba(0,0,0,0.5)",
-    minHeight: "90vh",
-    fontFamily: "'Crimson Text', serif",
-    color: "#f3e5ab"
+  container: {
+    maxWidth: "960px",
+    margin: "4rem auto",
+    padding: "0 2rem",
+    fontFamily: "'Georgia', serif",
+    color: "#2c1e14",
   },
-  bookHeader: {
-    textAlign: "center",
-    marginBottom: "3rem"
-  },
-  bookTitle: {
+  title: {
     fontFamily: "'Playfair Display', serif",
-    fontSize: "3.5rem",
-    color: "#d4af37",
-    margin: 0,
-    textShadow: "2px 2px 4px rgba(0,0,0,0.5)"
+    fontSize: "3rem",
+    textAlign: "center",
+    marginBottom: "0.5rem",
+    fontWeight: "normal",
   },
-  bookSubtitle: {
+  subtitle: {
+    textAlign: "center",
+    color: "#666",
     fontSize: "1.2rem",
-    fontStyle: "italic",
-    opacity: 0.8
-  },
-  goldDivider: {
-    color: "#d4af37",
-    fontSize: "1.5rem",
-    marginTop: "1rem"
-  },
-  searchSection: {
-    backgroundColor: "rgba(0,0,0,0.2)",
-    padding: "2rem",
-    borderRadius: "10px",
     marginBottom: "3rem",
-    border: "1px solid #4a3728"
   },
-  inputWrapper: {
-    display: "flex",
-    gap: "10px"
+  searchBox: {
+    backgroundColor: "#fbf9f6",
+    border: "2px solid #2c1e14",
+    padding: "2rem",
+    borderRadius: "4px",
+    marginBottom: "3rem",
+    boxShadow: "4px 4px 0px #2c1e14",
   },
-  quillInput: {
+  input: {
     flex: 1,
-    background: "#fdf6e3",
-    border: "2px solid #af9444",
-    padding: "12px 20px",
+    padding: "1rem",
     fontSize: "1.2rem",
-    borderRadius: "5px",
-    fontFamily: "'Crimson Text', serif",
-    color: "#2c1e14"
+    fontFamily: "inherit",
+    border: "2px solid #2c1e14",
+    borderRadius: "2px",
+    outline: "none",
+    transition: "all 0.2s"
   },
-  examineBtn: {
-    padding: "12px 25px",
-    backgroundColor: "#d4af37",
-    color: "#2c1e14",
-    border: "none",
-    fontWeight: "bold",
-    borderRadius: "5px",
+  micButton: {
+    padding: "0 1.2rem",
+    fontSize: "1.3rem",
+    height: "54px",
     cursor: "pointer",
-    fontSize: "1rem"
-  },
-  tagRow: {
-    marginTop: "1rem",
-    display: "flex",
-    gap: "10px",
-    justifyContent: "center"
-  },
-  miniTag: {
-    fontSize: "0.9rem",
-    color: "#d4af37",
-    cursor: "pointer",
-    textDecoration: "underline"
-  },
-  pagePaper: {
-    background: "#fdf6e3",
-    backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0.05) 100%)",
-    padding: "3rem",
-    color: "#2c1e14",
-    borderRadius: "3px",
-    position: "relative",
-    boxShadow: "5px 5px 15px rgba(0,0,0,0.3)",
-    transform: "rotate(-0.5deg)"
-  },
-  pageInner: {
-    border: "1px solid rgba(0,0,0,0.1)",
-    padding: "2rem"
-  },
-  nameHeader: {
+    backgroundColor: "#f5ece3",
+    border: "2px solid #2c1e14",
+    borderRadius: "2px",
     display: "flex",
     alignItems: "center",
-    gap: "15px",
-    marginBottom: "1.5rem"
+    justifyContent: "center",
+    transition: "all 0.2s",
   },
-  dropCap: {
-    fontSize: "5rem",
+  stopMicButton: {
+    padding: "0 1.2rem",
+    fontSize: "1.3rem",
+    height: "54px",
+    cursor: "pointer",
+    backgroundColor: "#c0392b",
+    border: "2px solid #2c1e14",
+    borderRadius: "2px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    boxShadow: "0 0 8px rgba(192,57,43,0.4)",
+  },
+  button: {
+    backgroundColor: "#2c1e14",
+    color: "#fff",
+    border: "none",
+    padding: "1rem 2rem",
+    fontSize: "1.2rem",
+    fontFamily: "inherit",
+    cursor: "pointer",
+    borderRadius: "2px",
+    height: "54px",
+  },
+  suggestionsContainer: {
+    marginTop: "1.2rem",
+    display: "flex",
+    gap: "0.5rem",
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
+  chip: {
+    backgroundColor: "transparent",
+    border: "1px dashed #2c1e14",
+    padding: "0.4rem 0.8rem",
+    fontFamily: "inherit",
+    cursor: "pointer",
+    fontSize: "0.95rem",
+    borderRadius: "2px",
+  },
+  errorCard: {
+    backgroundColor: "#fdf2f2",
+    color: "#b91c1c",
+    padding: "1rem",
+    borderRadius: "4px",
+    marginBottom: "2rem",
+    fontFamily: "system-ui, sans-serif",
+    border: "1px solid #fca5a5",
+  },
+  resultContainer: {
+    marginTop: "2rem",
+  },
+  entryHeader: {
+    textAlign: "center",
+    marginBottom: "2rem",
+  },
+  entryTitle: {
     fontFamily: "'Playfair Display', serif",
-    lineHeight: "1",
-    color: "#8b0000",
-    fontWeight: "bold"
+    fontSize: "3.5rem",
+    margin: "0 0 0.25rem 0",
+    fontWeight: "normal",
   },
-  entryName: {
-    fontFamily: "'Playfair Display', serif",
-    fontSize: "2.8rem",
-    margin: 0,
-    letterSpacing: "2px"
-  },
-  entryPronounce: {
+  pronunciation: {
     fontStyle: "italic",
     fontSize: "1.1rem",
-    color: "#555"
+    color: "#555",
   },
   entryMeaning: {
     fontSize: "1.4rem",
     lineHeight: "1.6",
     marginBottom: "2rem",
-    textAlign: "justify"
+    textAlign: "justify",
   },
   originGrid: {
     display: "grid",
@@ -284,58 +434,77 @@ const styles = {
     borderTop: "2px solid #2c1e14",
     borderBottom: "2px solid #2c1e14",
     padding: "1rem 0",
-    marginBottom: "2rem"
+    marginBottom: "2rem",
   },
   originBox: {
-    fontSize: "1.1rem"
+    fontSize: "1.1rem",
   },
   scriptureNote: {
     backgroundColor: "rgba(139, 0, 0, 0.05)",
     padding: "1.5rem",
     borderLeft: "4px solid #8b0000",
-    marginBottom: "2rem"
+    marginBottom: "2rem",
   },
   noteTitle: {
     margin: "0 0 0.5rem 0",
     color: "#8b0000",
-    fontSize: "1.2rem"
+    fontSize: "1.2rem",
+  },
+  subHeading: {
+    fontFamily: "'Playfair Display', serif",
+    fontSize: "1.5rem",
+    borderBottom: "1px solid #2c1e14",
+    paddingBottom: "0.5rem",
+    fontWeight: "normal",
+  },
+  list: {
+    paddingLeft: "1.2rem",
+    lineHeight: "1.8",
+  },
+  listItem: {
+    fontSize: "1.1rem",
+    marginBottom: "0.4rem",
   },
   chapterSection: {
-    marginTop: "3rem"
+    marginTop: "3rem",
   },
   chapterHeading: {
     fontFamily: "'Playfair Display', serif",
     textAlign: "center",
-    borderBottom: "1px solid #ccc",
-    paddingBottom: "10px",
-    marginBottom: "2rem"
+    borderBottom: "1px solid #2c1e14",
+    paddingBottom: "0.75rem",
+    marginBottom: "2rem",
+    fontSize: "1.8rem",
+    fontWeight: "normal",
   },
-  chapterItem: {
-    marginBottom: "2rem"
+  accordionContainer: {
+    border: "1px solid #2c1e14",
+    borderRadius: "2px",
   },
-  chapterSub: {
-    fontSize: "1.2rem",
+  accordionItem: {
+    borderBottom: "1px solid #2c1e14",
+  },
+  accordionHeader: {
+    width: "100%",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "1.2rem",
+    backgroundColor: "#fbf9f6",
+    border: "none",
+    textAlign: "left",
+    fontFamily: "inherit",
+    fontSize: "1.15rem",
+    cursor: "pointer",
+  },
+  accordionTitle: {
     fontWeight: "bold",
-    margin: "0 0 5px 0"
   },
-  chapterText: {
+  accordionContent: {
+    padding: "1.5rem",
+    backgroundColor: "#fff",
+    lineHeight: "1.6",
     fontSize: "1.1rem",
-    lineHeight: "1.5",
-    color: "#444"
+    borderTop: "1px dashed #2c1e14",
   },
-  footerInfo: {
-    fontSize: "1.1rem",
-    marginTop: "1rem",
-    borderTop: "1px dashed rgba(0,0,0,0.1)",
-    paddingTop: "1rem"
-  },
-  emptyState: {
-    textAlign: "center",
-    padding: "5rem",
-    opacity: 0.6
-  },
-  bigIcon: {
-    fontSize: "5rem",
-    marginBottom: "1rem"
-  }
 };
