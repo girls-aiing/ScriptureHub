@@ -26,13 +26,16 @@ export default function NameDictionaryPage() {
   const [error, setError] = useState("");
   const [expandedStep, setExpandedStep] = useState(0);
 
-  // Voice Recording & Media States
+  // Microphone state handles
   const [isRecording, setIsRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
 
-  // Triggers the Voice Guide welcome sequence on page mount
+  // Text To Speech Audio Player Generation state handles
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const activeAudioRef = useRef(null);
+
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('vg:subpage', { detail: 'names' }));
   }, []);
@@ -54,10 +57,7 @@ export default function NameDictionaryPage() {
 
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/wav" });
-        // Release mic resource light
         stream.getTracks().forEach((track) => track.stop());
-        
-        // Transcribe captured audio via Groq Whisper API
         await transcribeAudio(audioBlob);
       };
 
@@ -77,7 +77,7 @@ export default function NameDictionaryPage() {
     }
   };
 
-  // SEND AUDIO BLOB TO GROQ WHISPER API
+  // WHISPER SPEECH TRANSCRIPTION
   const transcribeAudio = async (audioBlob) => {
     setTranscribing(true);
     setError("");
@@ -88,9 +88,7 @@ export default function NameDictionaryPage() {
 
       const response = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${API_KEY}`,
-        },
+        headers: { Authorization: `Bearer ${API_KEY}` },
         body: formData,
       });
 
@@ -98,7 +96,6 @@ export default function NameDictionaryPage() {
 
       const data = await response.json();
       if (data.text) {
-        // Clear punctuation/spaces if Whisper returns extra symbols for single spoken names
         const transcribedName = data.text.replace(/[.#,?!]/g, "").trim();
         setQuery(transcribedName);
       } else {
@@ -109,6 +106,64 @@ export default function NameDictionaryPage() {
       setError("Failed to convert speech to text. Please try typing the name manually.");
     } finally {
       setTranscribing(false);
+    }
+  };
+
+  // NEW: GENERATE AI TEXT TO SPEECH AUDIO FOR PRONUNCIATION
+  const speakName = async (nameToSpeak) => {
+    if (!nameToSpeak || !nameToSpeak.trim()) return;
+    
+    // Stop any currently playing pronunciation sound
+    if (activeAudioRef.current) {
+      activeAudioRef.current.pause();
+    }
+
+    setIsSpeaking(true);
+    setError("");
+
+    try {
+      // Using OpenAI/Groq standard TTS structure to generate custom spoken voice file
+      const response = await fetch("https://api.groq.com/openai/v1/audio/speech", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "tts-1",
+          input: nameToSpeak,
+          voice: "alloy" // balanced crisp pronounciation voice
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("AI Pronunciation Generation failed. Falling back to native local synth.");
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      
+      const audio = new Audio(audioUrl);
+      activeAudioRef.current = audio;
+      
+      audio.onended = () => {
+        setIsSpeaking(false);
+      };
+      
+      await audio.play();
+    } catch (err) {
+      console.warn("TTS API Error - Triggering high quality Web Speech Synth alternative:", err);
+      // Fallback seamlessly to native web browser voice synthesizer if offline or rate-limited
+      try {
+        const utterance = new SpeechSynthesisUtterance(nameToSpeak);
+        utterance.rate = 0.85; // slightly slower cadence for high-clarity linguistic phonetics
+        utterance.onend = () => setIsSpeaking(false);
+        utterance.onerror = () => setIsSpeaking(false);
+        window.speechSynthesis.speak(utterance);
+      } catch (synthErr) {
+        setIsSpeaking(false);
+        setError("Linguistic audio translation engine is currently unavailable.");
+      }
     }
   };
 
@@ -153,13 +208,11 @@ export default function NameDictionaryPage() {
 
   return (
     <div style={styles.container}>
-      {/* Title Header */}
       <h1 style={styles.title}>Etymology & Name Lexicon</h1>
       <p style={styles.subtitle}>
         Discover the profound origins, variant paths, and scriptural weights behind chosen names.
       </p>
 
-      {/* Input Search Controls Container with Recording Buttons */}
       <div style={styles.searchBox}>
         <div style={{ display: "flex", gap: "0.5rem", width: "100%", alignItems: "center" }}>
           <input
@@ -176,25 +229,17 @@ export default function NameDictionaryPage() {
             }}
           />
 
-          {/* Voice Input Action Button Toggle */}
           {!isRecording ? (
             <button
               onClick={startRecording}
               disabled={transcribing || loading}
               title="Record voice input"
-              style={{
-                ...styles.micButton,
-                opacity: transcribing ? 0.6 : 1
-              }}
+              style={{ ...styles.micButton, opacity: transcribing ? 0.6 : 1 }}
             >
               🎙️ {transcribing && "..."}
             </button>
           ) : (
-            <button
-              onClick={stopRecording}
-              title="Stop recording"
-              style={styles.stopMicButton}
-            >
+            <button onClick={stopRecording} title="Stop recording" style={styles.stopMicButton}>
               🛑
             </button>
           )}
@@ -204,7 +249,6 @@ export default function NameDictionaryPage() {
           </button>
         </div>
 
-        {/* Suggestion Chips */}
         <div style={styles.suggestionsContainer}>
           <span style={{ fontSize: "0.9rem", color: "#666" }}>Inspirations: </span>
           {PLACEHOLDER_NAMES.map((name) => (
@@ -223,14 +267,28 @@ export default function NameDictionaryPage() {
         </div>
       </div>
 
-      {/* Error Output Banner */}
       {error && <div style={styles.errorCard}>⚠️ {error}</div>}
 
-      {/* Results Workspace Panel */}
       {result && (
         <div style={styles.resultContainer}>
           <div style={styles.entryHeader}>
-            <h2 style={styles.entryTitle}>{result.name}</h2>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem" }}>
+              <h2 style={styles.entryTitle}>{result.name}</h2>
+              
+              {/* TEXT TO SPEECH AI SPEAKER TRIGGER */}
+              <button
+                onClick={() => speakName(result.name)}
+                disabled={isSpeaking}
+                title="Listen to AI Pronunciation"
+                style={{
+                  ...styles.speakerButton,
+                  backgroundColor: isSpeaking ? "#2c1e14" : "#f5ece3",
+                  color: isSpeaking ? "#fff" : "#2c1e14"
+                }}
+              >
+                {isSpeaking ? "🔊 Playing..." : "🔊 Pronounce"}
+              </button>
+            </div>
             <span style={styles.pronunciation}>/ {result.pronunciation} /</span>
           </div>
 
@@ -255,7 +313,6 @@ export default function NameDictionaryPage() {
             </div>
           )}
 
-          {/* Related variants & notable bearers */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem", marginBottom: "3rem" }}>
             <div>
               <h3 style={styles.subHeading}>Morphological Variants</h3>
@@ -275,7 +332,6 @@ export default function NameDictionaryPage() {
             </div>
           </div>
 
-          {/* Interactive Breakdown Steps */}
           {result.steps && result.steps.length > 0 && (
             <div style={styles.chapterSection}>
               <h3 style={styles.chapterHeading}>Lexical Breakdown & Analysis</h3>
@@ -368,6 +424,18 @@ const styles = {
     justifyContent: "center",
     boxShadow: "0 0 8px rgba(192,57,43,0.4)",
   },
+  speakerButton: {
+    padding: "0.4rem 1rem",
+    fontSize: "0.9rem",
+    fontWeight: "600",
+    border: "1px dashed #2c1e14",
+    borderRadius: "20px",
+    cursor: "pointer",
+    fontFamily: "system-ui, sans-serif",
+    transition: "all 0.2s",
+    display: "inline-flex",
+    alignItems: "center"
+  },
   button: {
     backgroundColor: "#2c1e14",
     color: "#fff",
@@ -414,13 +482,15 @@ const styles = {
   entryTitle: {
     fontFamily: "'Playfair Display', serif",
     fontSize: "3.5rem",
-    margin: "0 0 0.25rem 0",
+    margin: "0",
     fontWeight: "normal",
   },
   pronunciation: {
     fontStyle: "italic",
     fontSize: "1.1rem",
     color: "#555",
+    display: "block",
+    marginTop: "0.5rem"
   },
   entryMeaning: {
     fontSize: "1.4rem",

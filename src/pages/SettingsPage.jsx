@@ -29,6 +29,7 @@ const DEFAULT_SETTINGS = {
   animationsOn:   true,
   voiceGuide:     true,
   voiceVolume:    0.85,
+  voiceProfile:   'alloy', 
 }
 
 const ACCENT_COLORS = [
@@ -40,28 +41,56 @@ const ACCENT_COLORS = [
   { label: 'Rose',     value: '#e84393' },
 ]
 
+const AI_VOICE_OPTIONS = [
+  { label: 'Alloy (Crisp & Balanced)', value: 'alloy' },
+  { label: 'Echo (Warm & Contemporary)', value: 'echo' },
+  { label: 'Fable (Narrative & Literary)', value: 'fable' },
+  { label: 'Onyx (Deep & Authoritative)', value: 'onyx' },
+  { label: 'Nova (Bright & Friendly)', value: 'nova' },
+  { label: 'Shimmer (Professional & Clear)', value: 'shimmer' },
+]
+
 export default function SettingsPage() {
   const { darkMode, toggleDarkMode }          = useTheme()
   const { lang, changeLanguage, t }           = useLanguage()
   const [settings, setSettings] = useState(() => loadJSON('scripturehub_settings', DEFAULT_SETTINGS))
   const [saved,    setSaved]    = useState(false)
   const [section,  setSection]  = useState('appearance')
+  const [showSummary, setShowSummary] = useState(false) // Toggle visibility for the user confirmation block
+const [lastChanges, setLastChanges] = useState({})
 
   function update(key, val) { setSettings(prev => ({ ...prev, [key]: val })) }
 
   function saveSettings() {
+    // Track what changed
+    const previous = loadJSON('scripturehub_settings', DEFAULT_SETTINGS)
+    const changes = {}
+    Object.keys(settings).forEach(key => {
+      if (JSON.stringify(settings[key]) !== JSON.stringify(previous[key])) {
+        changes[key] = { old: previous[key], new: settings[key] }
+      }
+    })
+    setLastChanges(changes)
+    
     saveJSON('scripturehub_settings', settings)
+    localStorage.setItem('scripturehub_voice_profile', settings.voiceProfile ?? 'alloy')
     localStorage.setItem('scripturehub_voice_volume', String(settings.voiceVolume ?? 0.85))
     localStorage.setItem('scripturehub_voice_muted', settings.voiceGuide === false ? 'true' : 'false')
+    
     setSaved(true)
+    setShowSummary(true) // Display settings confirmation grid layout
     playSave()
+    
+    // Auto-clear notification flags after a short duration
     setTimeout(() => setSaved(false), 2500)
+    setTimeout(() => setShowSummary(false), 9000) // Keep summary card view accessible for 9 seconds
   }
 
   function resetSettings() {
     if (window.confirm('Reset all settings to default?')) {
       setSettings(DEFAULT_SETTINGS)
       saveJSON('scripturehub_settings', DEFAULT_SETTINGS)
+      setShowSummary(false)
     }
   }
 
@@ -95,6 +124,8 @@ export default function SettingsPage() {
     { id: 'account',    icon: '👤', label: t('studyProgress')  },
     { id: 'about',      icon: 'ℹ️',  label: 'About'            },
   ]
+
+  const currentLangObj = LANGUAGES.find(l => l.code === lang) || { nativeName: 'English' }
 
   return (
     <div style={{ background: C.pageBg, minHeight: '100vh', fontFamily: 'Georgia,serif' }}>
@@ -133,6 +164,92 @@ export default function SettingsPage() {
 
           {/* ── Main content ── */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
+            {/* ── NEW VISUAL PREFERENCES SUMMARY OVERVIEW PANEL ── */}
+            {showSummary && (
+              <div style={{
+                background: darkMode ? '#12200f' : '#f4faf3',
+                border: '1px solid ' + (darkMode ? '#223d1c' : '#cee9cb'),
+                borderLeft: '5px solid #2ecc71',
+                borderRadius: '14px',
+                padding: '1.25rem',
+                boxShadow: '0 6px 24px rgba(0,0,0,0.06)',
+                color: C.text,
+                animation: 'fadeIn 0.25s ease-out'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                  <h4 style={{ margin: 0, color: '#2ecc71', fontWeight: '800', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                    <span>✓</span> Saved Preferences Summary
+                  </h4>
+                  <button 
+                    onClick={() => setShowSummary(false)} 
+                    style={{ background: 'transparent', border: 'none', color: C.muted, cursor: 'pointer', fontSize: '1.25rem', fontWeight: '700', padding: '0 0.2rem' }}
+                  >
+                    ×
+                  </button>
+                </div>
+                
+                <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: C.muted, lineHeight: '1.4' }}>
+                  Your settings have been saved and synced to local storage.
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.5rem', fontSize: '0.85rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0.6rem', background: C.pageBg, borderRadius: '6px', border: '1px solid ' + C.cardBorder }}>
+                    <span style={{ color: C.muted }}>Font Properties:</span>
+                    <strong style={{ textTransform: 'capitalize' }}>{settings.fontSize} ({settings.fontFamily})</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0.6rem', background: C.pageBg, borderRadius: '6px', border: '1px solid ' + C.cardBorder }}>
+                    <span style={{ color: C.muted }}>Interface Color Mode:</span>
+                    <strong>{darkMode ? 'Dark Theme' : 'Light Theme'}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0.6rem', background: C.pageBg, borderRadius: '6px', border: '1px solid ' + C.cardBorder }}>
+                    <span style={{ color: C.muted }}>Default Translation:</span>
+                    <strong style={{ textTransform: 'uppercase' }}>{settings.defaultBible}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0.6rem', background: C.pageBg, borderRadius: '6px', border: '1px solid ' + C.cardBorder }}>
+                    <span style={{ color: C.muted }}>Daily Devotional Target:</span>
+                    <strong>{settings.readingGoal} Chapters</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0.6rem', background: C.pageBg, borderRadius: '6px', border: '1px solid ' + C.cardBorder }}>
+                    <span style={{ color: C.muted }}>Exegesis Difficulty:</span>
+                    <strong style={{ textTransform: 'capitalize' }}>{settings.quizDifficulty}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0.6rem', background: C.pageBg, borderRadius: '6px', border: '1px solid ' + C.cardBorder }}>
+                    <span style={{ color: C.muted }}>System Translation:</span>
+                    <strong>{currentLangObj.nativeName} ({lang.toUpperCase()})</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0.6rem', background: C.pageBg, borderRadius: '6px', border: '1px solid ' + C.cardBorder }}>
+                    <span style={{ color: C.muted }}>Voice Narrator:</span>
+                    <strong>{settings.voiceGuide !== false ? `Active (${settings.voiceProfile || 'alloy'})` : 'Disabled'}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0.6rem', background: C.pageBg, borderRadius: '6px', border: '1px solid ' + C.cardBorder }}>
+                    <span style={{ color: C.muted }}>Acoustic Volume Level:</span>
+                    <strong>{settings.soundEffects ? `${Math.round((settings.voiceVolume ?? 0.85) * 100)}%` : 'MUTED'}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0.6rem', background: C.pageBg, borderRadius: '6px', border: '1px solid ' + C.cardBorder }}>
+                    <span style={{ color: C.muted }}>Last Saved:</span>
+                    <strong>{new Date().toLocaleTimeString()}</strong>
+                  </div>
+                </div>
+
+                {Object.keys(lastChanges).length > 0 && (
+                  <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid ' + C.divider }}>
+                    <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.85rem', color: C.muted, fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                      ✓ Changes Applied
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      {Object.entries(lastChanges).map(([key, change]) => (
+                        <div key={key} style={{ padding: '0.5rem 0.6rem', background: C.pageBg, borderRadius: '6px', border: '1px solid ' + settings.accentColor + '33', fontSize: '0.8rem' }}>
+                          <span style={{ color: C.muted, textTransform: 'capitalize' }}>{key.replace(/([A-Z])/g, ' $1')}:</span>
+                          <span style={{ color: C.muted, margin: '0 0.4rem' }}>→</span>
+                          <strong style={{ color: settings.accentColor }}>{String(change.new).substring(0, 30)}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* ── APPEARANCE ── */}
             {section === 'appearance' && (
@@ -214,7 +331,6 @@ export default function SettingsPage() {
                   </div>
                 </SettingsCard>
 
-                {/* Live preview */}
                 <SettingsCard title="✨ Live Preview" desc="See how your selected language looks" C={C}>
                   <div style={{ background: C.pageBg, border: '1px solid ' + C.cardBorder, borderRadius: '12px', padding: '1.25rem', marginTop: '0.5rem' }}>
                     <p style={{ color: C.muted, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: '700', margin: '0 0 0.75rem' }}>Navbar Preview</p>
@@ -248,7 +364,7 @@ export default function SettingsPage() {
             {section === 'reading' && (
               <>
                 <SettingsCard title={t('translation')} desc="Choose your default Bible translation" C={C}>
-                  <SelectInput options={['KJV','NIV','ESV','NKJV','NLT','AMP','MSG','CSB','NASB','RSV']} value={settings.defaultBible} onChange={v => { update('defaultBible', v); playToggle() }} C={C} />
+                  <SelectInput options= {['KJV','NIV','ESV','NKJV','NLT','AMP','MSG','CSB','NASB','RSV']} value={settings.defaultBible} onChange={v => { update('defaultBible', v); playToggle() }} C={C} />
                 </SettingsCard>
 
                 <SettingsCard title={t('dailyGoal')} desc="Set your daily Bible reading goal" C={C}>
@@ -282,7 +398,7 @@ export default function SettingsPage() {
                   />
                 </SettingsCard>
 
-                <SettingsCard title={t('streak')} desc="Show your daily study streak" C={C}>
+                <SettingsCard title={t('streak')} desc="Show your daily study study streak" C={C}>
                   <Toggle value={settings.showStreak} onChange={v => { update('showStreak', v); playToggle() }} accent={settings.accentColor} />
                 </SettingsCard>
 
@@ -294,9 +410,8 @@ export default function SettingsPage() {
                   <Toggle value={settings.soundEffects} onChange={v => { update('soundEffects', v); playToggle() }} accent={settings.accentColor} />
                 </SettingsCard>
 
-                {/* Voice Guide */}
                 <SettingsCard title={`🎙️ ${t('voiceGuide')}`} desc="A calm AI voice welcomes you on each page and explains what you can do there." C={C}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span style={{ color: C.muted, fontSize: '0.88rem', fontWeight: '600' }}>
                         {settings.voiceGuide !== false ? `🔊 ${t('voiceGuide')} ON` : `🔇 ${t('voiceGuide')} OFF`}
@@ -313,30 +428,62 @@ export default function SettingsPage() {
                       />
                     </div>
                     {settings.voiceGuide !== false && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <span style={{ color: C.muted, fontSize: '0.85rem', fontWeight: '600', minWidth: '80px' }}>
-                          🔊 Volume
-                        </span>
-                        <input
-                          type="range" min="0" max="1" step="0.05"
-                          value={settings.voiceVolume ?? 0.85}
-                          onChange={e => {
-                            const val = parseFloat(e.target.value)
-                            update('voiceVolume', val)
-                            localStorage.setItem('scripturehub_voice_volume', String(val))
-                          }}
-                          style={{ flex: 1, accentColor: settings.accentColor }}
-                        />
-                        <span style={{ color: settings.accentColor, fontWeight: '800', fontSize: '0.9rem', minWidth: '40px', textAlign: 'right' }}>
-                          {Math.round((settings.voiceVolume ?? 0.85) * 100)}%
-                        </span>
-                      </div>
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                          <span style={{ color: C.muted, fontSize: '0.85rem', fontWeight: '600', minWidth: '80px' }}>
+                            🔊 Volume
+                          </span>
+                          <input
+                            type="range" min="0" max="1" step="0.05"
+                            value={settings.voiceVolume ?? 0.85}
+                            onChange={e => {
+                              const val = parseFloat(e.target.value)
+                              update('voiceVolume', val)
+                              localStorage.setItem('scripturehub_voice_volume', String(val))
+                            }}
+                            style={{ flex: 1, accentColor: settings.accentColor }}
+                          />
+                          <span style={{ color: settings.accentColor, fontWeight: '800', fontSize: '0.9rem', minWidth: '40px', textAlign: 'right' }}>
+                            {Math.round((settings.voiceVolume ?? 0.85) * 100)}%
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', borderTop: '1px solid ' + C.divider, paddingTop: '1rem' }}>
+                          <label style={{ color: C.title, fontSize: '0.9rem', fontWeight: '700' }}>
+                            🌐 Global AI Voice Profile
+                          </label>
+                          <p style={{ color: C.muted, fontSize: '0.82rem', margin: '0 0 0.25rem' }}>
+                            Choose the voice model utilized across page exegesis narration engines and dictionary systems.
+                          </p>
+                          <select 
+                            value={settings.voiceProfile || 'alloy'} 
+                            onChange={e => { update('voiceProfile', e.target.value); playToggle() }} 
+                            style={{ 
+                              background: C.inputBg, 
+                              border: '2px solid ' + C.inputBorder, 
+                              borderRadius: '8px', 
+                              padding: '0.6rem 0.85rem', 
+                              color: C.inputColor, 
+                              fontSize: '0.9rem', 
+                              fontFamily: 'Georgia,serif', 
+                              outline: 'none', 
+                              cursor: 'pointer',
+                              width: '100%',
+                              maxWidth: '350px'
+                            }}
+                          >
+                            {AI_VOICE_OPTIONS.map(opt => (
+                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </>
                     )}
                     <div style={{ background: settings.accentColor + '12', border: '1px solid ' + settings.accentColor + '33', borderRadius: '10px', padding: '0.85rem 1rem' }}>
                       <p style={{ color: C.muted, fontSize: '0.82rem', margin: 0, lineHeight: '1.7' }}>
                         ✦ The voice speaks <strong style={{ color: C.title }}>once per page per session</strong>.<br />
                         ✦ Pause, replay, or stop using the <strong style={{ color: C.title }}>🎙️ button</strong> in the corner.<br />
-                        ✦ Uses your device's built-in voice engine — <strong style={{ color: C.title }}>no internet required</strong>.
+                        ✦ Uses your high-fidelity synthesized AI audio engine — <strong style={{ color: C.title }}>applied globally</strong>.
                       </p>
                     </div>
                   </div>
@@ -435,7 +582,7 @@ export default function SettingsPage() {
               </>
             )}
 
-            {/* ── Bottom save/reset bar ── */}
+            {/* ── Bottom Save Actions Bar ── */}
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', paddingTop: '0.5rem' }}>
               <button onClick={resetSettings} style={{ background: 'transparent', color: C.muted, border: '2px solid ' + C.cardBorder, borderRadius: '10px', padding: '0.65rem 1.4rem', fontWeight: '600', fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'Georgia,serif' }}>
                 {t('resetSettings')}
@@ -458,7 +605,7 @@ function SettingsCard({ title, desc, children, C, danger }) {
   return (
     <div style={{ background: C.cardBg, border: '1px solid ' + (danger ? '#e74c3c44' : C.cardBorder), borderLeft: '4px solid ' + (danger ? '#e74c3c' : '#c9a84c'), borderRadius: '0 14px 14px 0', padding: '1.25rem 1.5rem' }}>
       <div style={{ marginBottom: children ? '0.85rem' : 0 }}>
-        <h3 style={{ color: C.title, fontWeight: '800', fontSize: '1rem', margin: '0 0 0.2rem', fontFamily: 'Georgia,serif' }}>{title}</h3>
+        <h3 style={{ color: C.title, fontWeight: '800', fontSize: '1rem', margin: '0 0 0.2', fontFamily: 'Georgia,serif' }}>{title}</h3>
         {desc && <p style={{ color: C.muted, fontSize: '0.85rem', margin: 0, lineHeight: '1.6' }}>{desc}</p>}
       </div>
       {children}
