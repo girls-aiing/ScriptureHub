@@ -26,9 +26,22 @@ export default function DreamInterpreterPage() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [history, setHistory] = useState([]);
+
+  // Load history from localStorage on mount
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('dream_history');
+    if (savedHistory) {
+      try {
+        setHistory(JSON.parse(savedHistory));
+      } catch (e) {
+        console.error("Failed to parse dream history", e);
+      }
+    }
+  }, []);
 
   const handleInterpret = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!dreamInput.trim()) return;
 
     setLoading(true);
@@ -57,7 +70,21 @@ export default function DreamInterpreterPage() {
 
       const data = await response.json();
       const parsedResult = JSON.parse(data.choices[0].message.content);
+      
       setResult(parsedResult);
+
+      // Save to local history state and storage
+      const newHistoryItem = {
+        id: Date.now(),
+        date: new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+        dreamText: dreamInput,
+        interpretationData: parsedResult
+      };
+      
+      const updatedHistory = [newHistoryItem, ...history].slice(0, 10); // keep last 10 entries
+      setHistory(updatedHistory);
+      localStorage.setItem('dream_history', JSON.stringify(updatedHistory));
+
     } catch (err) {
       console.error(err);
       setError('Could not process interpretation. Please try again.');
@@ -66,8 +93,21 @@ export default function DreamInterpreterPage() {
     }
   };
 
+  const loadFromHistory = (item) => {
+    setDreamInput(item.dreamText);
+    setResult(item.interpretationData);
+    window.scrollTo({ top: 400, behavior: 'smooth' });
+  };
+
+  const clearHistory = () => {
+    if (window.confirm("Are you sure you want to clear your vision history?")) {
+      setHistory([]);
+      localStorage.removeItem('dream_history');
+    }
+  };
+
   return (
-    <div style={{ maxWidth: '720px', margin: '3rem auto', padding: '0 1.5rem', fontFamily: 'Georgia, serif', color: '#2d1f10' }}>
+    <div style={{ maxWidth: '840px', margin: '3rem auto', padding: '0 1.5rem', fontFamily: 'Georgia, serif', color: '#2d1f10' }}>
       
       {/* HEADER SECTION */}
       <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
@@ -82,129 +122,143 @@ export default function DreamInterpreterPage() {
         </p>
       </div>
 
-      {/* INPUT FORM CONTAINER */}
-      <div style={{ background: '#ffffff', border: '1px solid rgba(201,168,76,0.18)', borderRadius: '16px', padding: '2rem', boxShadow: '0 10px 35px rgba(201,168,76,0.06)', marginBottom: '2.5rem' }}>
-        <form onSubmit={handleInterpret}>
-          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#c9a84c', marginBottom: '0.75rem', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-            Describe Your Vision
-          </label>
-          <textarea
-            value={dreamInput}
-            onChange={(e) => setDreamInput(e.target.value)}
-            placeholder="Provide as many details, emotions, or specific objects from your dream as you can remember..."
-            rows={5}
-            style={{
-              width: '100%', padding: '1.2rem', borderRadius: '12px',
-              border: '1px solid rgba(201,168,76,0.3)', background: 'rgba(201,168,76,0.02)',
-              fontSize: '1.05rem', color: '#1a1105', outline: 'none',
-              resize: 'vertical', fontFamily: 'Georgia, serif', boxSizing: 'border-box',
-              lineHeight: '1.6', transition: 'border-color 0.2s, box-shadow 0.2s'
-            }}
-            onFocus={(e) => {
-              e.target.style.borderColor = '#c9a84c';
-              e.target.style.boxShadow = '0 0 0 4px rgba(201,168,76,0.1)';
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = 'rgba(201,168,76,0.3)';
-              e.target.style.boxShadow = 'none';
-            }}
-          />
-          <button
-            type="submit"
-            disabled={loading || !dreamInput.trim()}
-            style={{
-              width: '100%', padding: '1rem', marginTop: '1rem',
-              background: '#1a1105', color: '#fcf9f2', border: 'none',
-              borderRadius: '10px', fontSize: '1rem', fontWeight: '600',
-              letterSpacing: '0.02em', cursor: 'pointer', transition: 'all 0.2s',
-              fontFamily: 'system-ui, -apple-system, sans-serif',
-              boxShadow: '0 4px 12px rgba(26,17,5,0.15)',
-              opacity: (loading || !dreamInput.trim()) ? 0.5 : 1
-            }}
-          >
-            {loading ? (
-              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', background: '#fff', opacity: 0.6, animation: 'pulse 1s infinite alternate' }} />
-                Consulting Biblical Archetypes...
-              </span>
-            ) : 'Discern Spiritual Translation'}
-          </button>
-        </form>
+      <div style={{ display: 'grid', gridTemplateColumns: history.length > 0 ? '1fr 260px' : '1fr', gap: '2rem', alignItems: 'start' }}>
+        
+        {/* MAIN WORKSPACE */}
+        <div>
+          {/* INPUT FORM CONTAINER */}
+          <div style={{ background: '#ffffff', border: '1px solid rgba(201,168,76,0.18)', borderRadius: '16px', padding: '2rem', boxShadow: '0 10px 35px rgba(201,168,76,0.06)', marginBottom: '2.5rem' }}>
+            <form onSubmit={handleInterpret}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#c9a84c', marginBottom: '0.75rem', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                Describe Your Vision
+              </label>
+              <textarea
+                value={dreamInput}
+                onChange={(e) => setDreamInput(e.target.value)}
+                placeholder="Provide as many details, emotions, or specific objects from your dream as you can remember..."
+                rows={5}
+                style={{
+                  width: '100%', padding: '1.2rem', borderRadius: '12px',
+                  border: '1px solid rgba(201,168,76,0.3)', background: 'rgba(201,168,76,0.02)',
+                  fontSize: '1.05rem', color: '#1a1105', outline: 'none',
+                  resize: 'vertical', fontFamily: 'Georgia, serif', boxSizing: 'border-box',
+                  lineHeight: '1.6', transition: 'all 0.2s'
+                }}
+              />
+              <button
+                type="submit"
+                disabled={loading || !dreamInput.trim()}
+                style={{
+                  width: '100%', padding: '1rem', marginTop: '1rem',
+                  background: '#1a1105', color: '#fcf9f2', border: 'none',
+                  borderRadius: '10px', fontSize: '1rem', fontWeight: '600',
+                  letterSpacing: '0.02em', cursor: 'pointer', transition: 'all 0.2s',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                  boxShadow: '0 4px 12px rgba(26,17,5,0.15)',
+                  opacity: (loading || !dreamInput.trim()) ? 0.5 : 1
+                }}
+              >
+                {loading ? 'Consulting Biblical Archetypes...' : 'Discern Spiritual Translation'}
+              </button>
+            </form>
+          </div>
+
+          {/* ERROR PANEL */}
+          {error && (
+            <div style={{ color: '#c0392b', background: '#fdf2f2', padding: '1rem', borderRadius: '10px', textAlign: 'center', fontWeight: '500', marginBottom: '2rem', fontSize: '0.95rem', fontFamily: 'system-ui, -apple-system, sans-serif', border: '1px solid #f5c6cb' }}>
+              ⚠️ {error}
+            </div>
+          )}
+
+          {/* RESULTS REPORT */}
+          {result && (
+            <div style={{ background: '#fdfbf7', border: '1px solid #c9a84c', borderRadius: '20px', padding: '2.5rem', boxShadow: '0 15px 50px rgba(26,17,5,0.05)' }}>
+              
+              {/* Header & Title */}
+              <div style={{ borderBottom: '1px solid rgba(201,168,76,0.2)', paddingBottom: '1.25rem', marginBottom: '1.5rem' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#c9a84c', display: 'block', marginBottom: '0.25rem', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  Exegesis Report
+                </span>
+                <h2 style={{ color: '#1a1105', margin: 0, fontSize: '1.75rem', fontWeight: '400' }}>
+                  {result.title}
+                </h2>
+              </div>
+              
+              {/* Symbols Deciphered */}
+              <div style={{ marginBottom: '1.75rem', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ color: '#665743', fontSize: '0.85rem', fontWeight: '600', marginRight: '0.25rem', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  Core Symbols:
+                </span>
+                {result.symbols?.map((symbol, index) => (
+                  <span key={index} style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.3)', padding: '0.3rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', color: '#7a5000', fontWeight: '500', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    {symbol}
+                  </span>
+                ))}
+              </div>
+
+              {/* Primary Interpretation Narrative */}
+              <div style={{ marginBottom: '2rem' }}>
+                <p style={{ fontSize: '1.15rem', color: '#2d1f10', lineHeight: '1.7', margin: 0, fontStyle: 'italic' }}>
+                  "{result.interpretation}"
+                </p>
+              </div>
+
+              {/* Scriptural Anchor Box */}
+              <div style={{ borderLeft: '3px solid #c9a84c', paddingLeft: '1.25rem', margin: '2rem 0', background: 'rgba(201,168,76,0.03)', padding: '1.25rem 1.25rem 1.25rem 1.5rem', borderRadius: '0 12px 12px 0' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#c9a84c', display: 'block', letterSpacing: '0.05em', marginBottom: '0.4rem', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  SCRIPTURAL ANCHOR — {result.scriptureRef}
+                </span>
+                <p style={{ margin: 0, fontSize: '1rem', color: '#4d3d28', lineHeight: '1.6', fontWeight: '400' }}>
+                  "{result.scriptureText}"
+                </p>
+              </div>
+
+              {/* Devotional Prayer Space */}
+              <div style={{ background: '#ffffff', borderRadius: '14px', padding: '1.5rem', marginTop: '2rem', border: '1px solid rgba(201,168,76,0.2)', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.01)' }}>
+                <h3 style={{ margin: '0 0 0.75rem 0', fontSize: '1.1rem', color: '#1a1105', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '500' }}>
+                  <span style={{ fontSize: '1.2rem' }}>🙏</span> Bespoke Devotional Prayer
+                </h3>
+                <p style={{ margin: 0, fontSize: '0.95rem', lineHeight: '1.65', color: '#4a3f31', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  {result.prayer}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* SIDE PANEL HISTORY INVENTORY */}
+        {history.length > 0 && (
+          <div style={{ background: '#fdfcf9', border: '1px solid rgba(201,168,76,0.2)', borderRadius: '14px', padding: '1.25rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid rgba(201,168,76,0.15)', paddingBottom: '0.5rem' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#665743', fontFamily: 'system-ui, -apple-system, sans-serif' }}>RECENT VISIONS</span>
+              <button onClick={clearHistory} style={{ background: 'none', border: 'none', color: '#c0392b', fontSize: '0.75rem', cursor: 'pointer', fontFamily: 'system-ui, -apple-system, sans-serif' }}>Clear</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {history.map((item) => (
+                <div 
+                  key={item.id} 
+                  onClick={() => loadFromHistory(item)}
+                  style={{ 
+                    padding: '0.75rem', background: '#ffffff', border: '1px solid rgba(0,0,0,0.04)', 
+                    borderRadius: '8px', cursor: 'pointer', transition: 'all 0.15s',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.01)'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.borderColor = '#c9a84c'}
+                  onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(0,0,0,0.04)'}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#c9a84c', marginBottom: '0.25rem', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    <span>{item.date}</span>
+                  </div>
+                  <div style={{ fontSize: '0.9rem', color: '#1a1105', fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {item.interpretationData?.title || 'Untitled Vision'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
-
-      {/* ERROR PANEL */}
-      {error && (
-        <div style={{ color: '#c0392b', background: '#fdf2f2', padding: '1rem', borderRadius: '10px', textAlign: 'center', fontWeight: '500', marginBottom: '2rem', fontSize: '0.95rem', fontFamily: 'system-ui, -apple-system, sans-serif', border: '1px solid #f5c6cb' }}>
-          ⚠️ {error}
-        </div>
-      )}
-
-      {/* PROFESSIONAL RESULTS REPORT */}
-      {result && (
-        <div style={{ background: '#fdfbf7', border: '1px solid #c9a84c', borderRadius: '20px', padding: '2.5rem', boxShadow: '0 15px 50px rgba(26,17,5,0.05)', animation: 'fadeIn 0.4s ease-out' }}>
-          
-          {/* Header & Title */}
-          <div style={{ borderBottom: '1px solid rgba(201,168,76,0.2)', paddingBottom: '1.25rem', marginBottom: '1.5rem' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#c9a84c', display: 'block', marginBottom: '0.25rem', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-              Exegesis Report
-            </span>
-            <h2 style={{ color: '#1a1105', margin: 0, fontSize: '1.75rem', fontWeight: '400' }}>
-              {result.title}
-            </h2>
-          </div>
-          
-          {/* Symbols Deciphered */}
-          <div style={{ marginBottom: '1.75rem', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ color: '#665743', fontSize: '0.85rem', fontWeight: '600', marginRight: '0.25rem', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-              Core Symbols:
-            </span>
-            {result.symbols.map((symbol, index) => (
-              <span key={index} style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.3)', padding: '0.3rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', color: '#7a5000', fontWeight: '500', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                {symbol}
-              </span>
-            ))}
-          </div>
-
-          {/* Primary Interpretation Narrative */}
-          <div style={{ marginBottom: '2rem' }}>
-            <p style={{ fontSize: '1.15rem', color: '#2d1f10', lineHeight: '1.7', margin: 0, fontStyle: 'italic' }}>
-              "{result.interpretation}"
-            </p>
-          </div>
-
-          {/* Scriptural Anchor Box */}
-          <div style={{ borderLeft: '3px solid #c9a84c', paddingLeft: '1.25rem', margin: '2rem 0', background: 'rgba(201,168,76,0.03)', padding: '1.25rem 1.25rem 1.25rem 1.5rem', borderRadius: '0 12px 12px 0' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#c9a84c', display: 'block', letterSpacing: '0.05em', marginBottom: '0.4rem', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-              SCRIPTURAL ANCHOR — {result.scriptureRef}
-            </span>
-            <p style={{ margin: 0, fontSize: '1rem', color: '#4d3d28', lineHeight: '1.6', fontWeight: '400' }}>
-              "{result.scriptureText}"
-            </p>
-          </div>
-
-          {/* Devotional Prayer Space */}
-          <div style={{ background: '#ffffff', borderRadius: '14px', padding: '1.5rem', marginTop: '2rem', border: '1px solid rgba(201,168,76,0.2)', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.01)' }}>
-            <h3 style={{ margin: '0 0 0.75rem 0', fontSize: '1.1rem', color: '#1a1105', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '500' }}>
-              <span style={{ fontSize: '1.2rem' }}>🙏</span> Bespoke Devotional Prayer
-            </h3>
-            <p style={{ margin: 0, fontSize: '0.95rem', lineHeight: '1.6.5', color: '#4a3f31', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-              {result.prayer}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Embedded Animation Keyframes */}
-      <style>{`
-        @keyframes pulse {
-          0% { transform: scale(0.8); opacity: 0.4; }
-          100% { transform: scale(1.2); opacity: 1; }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(12px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 }

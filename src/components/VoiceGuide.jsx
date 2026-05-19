@@ -107,9 +107,6 @@ const PREFERRED_VOICES = [
   'Microsoft Brian Online (Natural) - English (United States)',
 ]
 
-// ─────────────────────────────────────────────────────────────────
-// SINGLE GLOBAL ENGINE CONFIG
-// ─────────────────────────────────────────────────────────────────
 const engine = {
   stopped:   true,
   queue:     [],
@@ -215,9 +212,6 @@ function engineStop() {
   try { window.speechSynthesis.cancel(); } catch {}
 }
 
-// ─────────────────────────────────────────────────────────────────
-// EXPORTS
-// ─────────────────────────────────────────────────────────────────
 export function speakText(text) { engineSpeak(text); }
 export function stopVoiceGuide() { engineStop(); }
 export function replayVoiceGuide(path) {
@@ -229,9 +223,6 @@ export function announceHymnView(subpage) {
   if (text) engineSpeak(text);
 }
 
-// ─────────────────────────────────────────────────────────────────
-// MAIN VOICE GUIDE SYSTEM RUNTIME COMPONENT
-// ─────────────────────────────────────────────────────────────────
 export default function VoiceGuide() {
   const location = useLocation();
 
@@ -260,8 +251,8 @@ export default function VoiceGuide() {
   const unlockedRef = useRef(false);
   const activeSubpage = useRef(null);
   
-  // Track deep paths that have fired speech on this unique entry visit cycle
-  const completedVisits = useRef(new Set());
+  // Track if speech has fired on this specific visit cycle
+  const hasSpokenOnCurrentVisit = useRef(false);
 
   useEffect(() => { unlockedRef.current = unlocked; }, [unlocked]);
 
@@ -365,8 +356,8 @@ export default function VoiceGuide() {
       setUnlocked(true);
       if (isMuted() || !isEnabled()) return;
       
-      if (initialPath === '/ai/dreams') {
-        completedVisits.current.add('/ai/dreams');
+      if (initialPath === '/ai/dreams' || initialPath === '/dreams') {
+        hasSpokenOnCurrentVisit.current = true;
       }
       setTimeout(() => speakPage(initialPath), 500);
     };
@@ -391,30 +382,29 @@ export default function VoiceGuide() {
     prevPath.current = path;
 
     engineStop();
+    
+    // Clear subpage registers on route transitions
+    activeSubpage.current = null;
+
     if (muted || !unlockedRef.current || !isEnabled()) return;
 
-    // Direct targeted execution strategy for Dream Interpreter path
-    if (path === '/ai/dreams') {
-      activeSubpage.current = null;
-      if (!completedVisits.current.has(path)) {
-        completedVisits.current.add(path);
+    // Route rule adjustment for dream interpreter paths
+    if (path === '/ai/dreams' || path === '/dreams') {
+      if (!hasSpokenOnCurrentVisit.current) {
+        hasSpokenOnCurrentVisit.current = true;
         const routeTimeout = setTimeout(() => speakPage(path), 250);
         return () => clearTimeout(routeTimeout);
       }
       return; 
     }
 
-    // Reset lock logic when user navigates completely away from the functional subpath
-    if (path !== '/ai/dreams') {
-      completedVisits.current.delete('/ai/dreams');
-    }
+    // When navigating away from Dream Interpreter, reset the visit history trigger flag completely
+    hasSpokenOnCurrentVisit.current = false;
 
-    // Direct routing parameters ignore generic deep child routes
     if ((path.startsWith('/ai/') && path !== '/ai') || (path.startsWith('/bible/') && path !== '/bible') || path.split('/').filter(Boolean).length > 1) {
       return;
     }
 
-    activeSubpage.current = null;
     const routeTimeout = setTimeout(() => speakPage(path), 250);
     return () => clearTimeout(routeTimeout);
   // eslint-disable-next-line react-hooks/exhaustive-deps
