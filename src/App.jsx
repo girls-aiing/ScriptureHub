@@ -28,6 +28,9 @@ import BibleMapsPage        from './pages/BibleMapsPage.jsx'
 import DeepSearchPage       from './pages/DeepSearchPage.jsx'
 import NameDictionaryPage   from './pages/NameDictionaryPage.jsx'
 import DreamInterpreterPage from './pages/DreamInterpreterPage.jsx'
+import AuthPage             from './pages/AuthPage.jsx'
+import ProfilePage          from './pages/ProfilePage.jsx' // Make sure to create this file next!
+import { supabase }         from './utils/supabaseClient.js'
 
 // Pages where the floating chat should be hidden
 const HIDDEN_CHAT_PATHS = ['/ai']
@@ -43,11 +46,44 @@ function ConditionalChat() {
 }
 
 function AppShell() {
+  const [session, setSession] = React.useState(null)
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    // Check initial authentication session state on mount
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setLoading(false)
+    })
+
+    // Listen to real-time auth changes (Sign-in, sign-out, tokens changing)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+      setLoading(false)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f5f0e8', fontFamily: 'Georgia, serif' }}>
+        <h3 style={{ color: '#1a1a2e' }}>Connecting to ScriptureHub Altar...</h3>
+      </div>
+    )
+  }
+
+  // Gatekeeper checkpoint: If user session doesn't exist, display the authorization forms
+  if (!session) {
+    return <AuthPage />
+  }
+
   return (
     <div className="app-shell">
       <Navbar toggleSlot={<DarkModeToggle />} />
       <main className="app-main">
         <Routes>
+          <Route path="/profile"         element={<ProfilePage />} />
           <Route path="/"                element={<HomePage />} />
           <Route path="/bible"           element={<BibleReaderPage />} />
           <Route path="/quizzes"         element={<KnowledgeHubPage />} />

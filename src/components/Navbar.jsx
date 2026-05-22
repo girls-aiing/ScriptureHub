@@ -532,6 +532,14 @@ export default function Navbar({ toggleSlot }) {
             </Link>
           </li>
 
+          {/* Profile */}
+          <li>
+            <Link to="/profile" className={isActive('/profile') ? 'active' : ''}
+              onClick={() => { closeMenu(); playNavClick() }}>
+              👤 Profile
+            </Link>
+          </li>
+
           <li aria-hidden="true"><div className="navbar__divider" /></li>
 
           {/* ── My Journey Dropdown ── */}
@@ -694,6 +702,12 @@ export default function Navbar({ toggleSlot }) {
               <Link to="/settings" className={isActive('/settings') ? 'active' : ''}
                 onClick={() => { closeMenu(); playNavClick() }}>
                 ⚙️ {t('settings')}
+              </Link>
+            </li>
+            <li>
+              <Link to="/profile" className={isActive('/profile') ? 'active' : ''}
+                onClick={() => { closeMenu(); playNavClick() }}>
+                👤 Profile
               </Link>
             </li>
           </ul>
