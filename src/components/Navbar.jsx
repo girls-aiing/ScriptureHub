@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useLanguage } from '../context/LanguageContext.jsx'
 import { playNavClick } from '../hooks/useSound.js'
 
-export default function Navbar({ toggleSlot }) {
+export default function Navbar({ toggleSlot, isPublicView = false }) {
   const [menuOpen,      setMenuOpen]      = useState(false)
   const [discoveryOpen, setDiscoveryOpen] = useState(false)
   const [aiOpen,        setAiOpen]        = useState(false)
@@ -48,7 +48,6 @@ export default function Navbar({ toggleSlot }) {
   const isActive = (path) =>
     path === '/' ? location.pathname === '/' : location.pathname === path
 
-  // Updated to include /dreams in the discovery active tabs list
   const isDiscoveryActive = ['/did-you-know', '/secrets', '/maps', '/name-dictionary', '/dreams'].includes(location.pathname)
   const isAiActive        = ['/ai', '/values', '/search'].includes(location.pathname)
   const isPrayerActive    = ['/prayer-guide', '/prayer', '/progress'].includes(location.pathname)
@@ -363,7 +362,7 @@ export default function Navbar({ toggleSlot }) {
       <nav className="navbar" role="navigation" aria-label="Main navigation">
 
         {/* Brand */}
-        <Link to="/" className="navbar__brand" onClick={() => { closeMenu(); playNavClick() }}>
+        <Link to={isPublicView ? "/about" : "/"} className="navbar__brand" onClick={() => { closeMenu(); playNavClick() }}>
           <span style={{ fontSize: '1.6rem' }}>✦</span>
           <div>
             <div className="navbar__brand-name">ScriptureHub</div>
@@ -371,242 +370,254 @@ export default function Navbar({ toggleSlot }) {
           </div>
         </Link>
 
-        {/* ── Desktop Links ── */}
-        <ul className="navbar__links" role="list">
-
-          {/* Home */}
-          <li>
-            <Link to="/" className={isActive('/') ? 'active' : ''}
-              onClick={() => { closeMenu(); playNavClick() }}>
-              {t('home')}
+        {/* Guest Portal Visibility Logic */}
+        {isPublicView ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginLeft: 'auto', marginRight: '5px' }}>
+            <span style={{ color: '#a89bc2', fontSize: '0.78rem', fontFamily: 'Montserrat, sans-serif', fontWeight: '500' }}>Guest Portal</span>
+            <Link to="/" state={{ showAuth: true }} style={{ background: '#f0c040', color: '#1a0a2e', textDecoration: 'none', fontSize: '0.78rem', fontFamily: 'Montserrat, sans-serif', padding: '6px 16px', borderRadius: '6px', fontWeight: '700', transition: 'transform 0.2s' }} onClick={playNavClick}>
+              Sign In 👤
             </Link>
-          </li>
+          </div>
+        ) : (
 
-          {/* Bible */}
-          <li>
-            <Link to="/bible" className={isActive('/bible') ? 'active' : ''}
-              onClick={() => { closeMenu(); playNavClick() }}>
-              {t('bible')}
-            </Link>
-          </li>
+          /* ── Desktop Links ── */
+          <ul className="navbar__links" role="list">
 
-          {/* Quizzes */}
-          <li>
-            <Link to="/quizzes" className={isActive('/quizzes') ? 'active' : ''}
-              onClick={() => { closeMenu(); playNavClick() }}>
-              {t('quizzes')}
-            </Link>
-          </li>
+            {/* Home */}
+            {"\u00a0"}<li>
+              <Link to="/" className={isActive('/') ? 'active' : ''}
+                onClick={() => { closeMenu(); playNavClick() }}>
+                {t('home')}
+              </Link>
+            </li>
 
-          {/* ── AI Advisor Dropdown ── */}
-          <li ref={aiRef} className="dropdown-wrapper">
-            <button
-              className={`dropdown-trigger${isAiActive ? ' active' : ''}`}
-              onClick={() => { openAi(); playNavClick() }}
-              aria-expanded={aiOpen}
-              aria-haspopup="true"
-            >
-              🤖 AI Advisor
-              <span className={`dropdown-caret${aiOpen ? ' open' : ''}`}>▼</span>
-            </button>
-            {aiOpen && (
-              <div className="dropdown-menu" role="menu">
-                <div className="dropdown-label">AI Tools</div>
-                <Link to="/ai" className={isActive('/ai') ? 'active' : ''}
-                  role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
-                  <span style={{ fontSize:'1.1rem' }}>🤖</span>
-                  <div>
-                    <div style={{ fontWeight:'600', marginBottom:'2px' }}>AI Advisor</div>
-                    <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Ask any Bible question</div>
-                  </div>
-                </Link>
-                <div className="dropdown-divider" />
-                <Link to="/search" className={isActive('/search') ? 'active' : ''}
-                  role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
-                  <span style={{ fontSize:'1.1rem' }}>🔍</span>
-                  <div>
-                    <div style={{ fontWeight:'600', marginBottom:'2px' }}>AI Deep Search</div>
-                    <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Search by feeling or need</div>
-                  </div>
-                </Link>
-                <div className="dropdown-divider" />
-                <div className="dropdown-label">Growth</div>
-                <Link to="/values" className={isActive('/values') ? 'active' : ''}
-                  role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
-                  <span style={{ fontSize:'1.1rem' }}>🌟</span>
-                  <div>
-                    <div style={{ fontWeight:'600', marginBottom:'2px' }}>Values Hub</div>
-                    <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Scriptures &amp; life advice</div>
-                  </div>
-                </Link>
-              </div>
-            )}
-          </li>
+            {/* Bible */}
+            <li>
+              <Link to="/bible" className={isActive('/bible') ? 'active' : ''}
+                onClick={() => { closeMenu(); playNavClick() }}>
+                {t('bible')}
+              </Link>
+            </li>
 
-          {/* ── Discovery Dropdown ── */}
-          <li ref={discoveryRef} className="dropdown-wrapper">
-            <button
-              className={`dropdown-trigger${isDiscoveryActive ? ' active' : ''}`}
-              onClick={() => { openDiscovery(); playNavClick() }}
-              aria-expanded={discoveryOpen}
-              aria-haspopup="true"
-            >
-              💡 Discover
-              <span className={`dropdown-caret${discoveryOpen ? ' open' : ''}`}>▼</span>
-            </button>
-            {discoveryOpen && (
-              <div className="dropdown-menu" role="menu">
-                <div className="dropdown-label">Explore</div>
-                <Link to="/did-you-know" className={isActive('/did-you-know') ? 'active' : ''}
-                  role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
-                  <span style={{ fontSize:'1.1rem' }}>💡</span>
-                  <div>
-                    <div style={{ fontWeight:'600', marginBottom:'2px' }}>Did You Know?</div>
-                    <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Bible facts &amp; wonders</div>
-                  </div>
-                </Link>
-                <div className="dropdown-divider" />
-                <Link to="/secrets" className={isActive('/secrets') ? 'active' : ''}
-                  role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
-                  <span style={{ fontSize:'1.1rem' }}>🔍</span>
-                  <div>
-                    <div style={{ fontWeight:'600', marginBottom:'2px' }}>Biblical Secrets</div>
-                    <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>60 flip-card discoveries</div>
-                  </div>
-                </Link>
-                <div className="dropdown-divider" />
-                <Link to="/maps" className={isActive('/maps') ? 'active' : ''}
-                  role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
-                  <span style={{ fontSize:'1.1rem' }}>🗺️</span>
-                  <div>
-                    <div style={{ fontWeight:'600', marginBottom:'2px' }}>Bible Maps</div>
-                    <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Interactive maps &amp; timelines</div>
-                  </div>
-                </Link>
-                <div className="dropdown-divider" />
-                <Link to="/name-dictionary" className={isActive('/name-dictionary') ? 'active' : ''}
-                  role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
-                  <span style={{ fontSize:'1.1rem' }}>📖</span>
-                  <div>
-                    <div style={{ fontWeight:'600', marginBottom:'2px' }}>Name Dictionary</div>
-                    <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Meaning &amp; origin of any name</div>
-                  </div>
-                </Link>
-                {/* Desktop Dropdown Link added for Dream Interpreter */}
-                <div className="dropdown-divider" />
-                <Link to="/dreams" className={isActive('/dreams') ? 'active' : ''}
-                  role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
-                  <span style={{ fontSize:'1.1rem' }}>🌙</span>
-                  <div>
-                    <div style={{ fontWeight:'600', marginBottom:'2px' }}>Dream Interpreter</div>
-                    <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Biblical meanings of dreams</div>
-                  </div>
-                </Link>
-              </div>
-            )}
-          </li>
+            {/* Quizzes */}
+            <li>
+              <Link to="/quizzes" className={isActive('/quizzes') ? 'active' : ''}
+                onClick={() => { closeMenu(); playNavClick() }}>
+                {t('quizzes')}
+              </Link>
+            </li>
 
-          <li aria-hidden="true"><div className="navbar__divider" /></li>
+            {/* ── AI Advisor Dropdown ── */}
+            <li ref={aiRef} className="dropdown-wrapper">
+              <button
+                className={`dropdown-trigger${isAiActive ? ' active' : ''}`}
+                onClick={() => { openAi(); playNavClick() }}
+                aria-expanded={aiOpen}
+                aria-haspopup="true"
+              >
+                🤖 AI Advisor
+                <span className={`dropdown-caret${aiOpen ? ' open' : ''}`}>▼</span>
+              </button>
+              {aiOpen && (
+                <div className="dropdown-menu" role="menu">
+                  <div className="dropdown-label">AI Tools</div>
+                  <Link to="/ai" className={isActive('/ai') ? 'active' : ''}
+                    role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
+                    <span style={{ fontSize:'1.1rem' }}>🤖</span>
+                    <div>
+                      <div style={{ fontWeight:'600', marginBottom:'2px' }}>AI Advisor</div>
+                      <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Ask any Bible question</div>
+                    </div>
+                  </Link>
+                  <div className="dropdown-divider" />
+                  <Link to="/search" className={isActive('/search') ? 'active' : ''}
+                    role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
+                    <span style={{ fontSize:'1.1rem' }}>🔍</span>
+                    <div>
+                      <div style={{ fontWeight:'600', marginBottom:'2px' }}>AI Deep Search</div>
+                      <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Search by feeling or need</div>
+                    </div>
+                  </Link>
+                  <div className="dropdown-divider" />
+                  <div className="dropdown-label">Growth</div>
+                  <Link to="/values" className={isActive('/values') ? 'active' : ''}
+                    role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
+                    <span style={{ fontSize:'1.1rem' }}>🌟</span>
+                    <div>
+                      <div style={{ fontWeight:'600', marginBottom:'2px' }}>Values Hub</div>
+                      <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Scriptures &amp; life advice</div>
+                    </div>
+                  </Link>
+                </div>
+              )}
+            </li>
 
-          {/* Games */}
-          <li>
-            <Link to="/games" className={isActive('/games') ? 'active' : ''}
-              onClick={() => { closeMenu(); playNavClick() }}>
-              🎮 {t('games')}
-            </Link>
-          </li>
+            {/* ── Discovery Dropdown ── */}
+            <li ref={discoveryRef} className="dropdown-wrapper">
+              <button
+                className={`dropdown-trigger${isDiscoveryActive ? ' active' : ''}`}
+                onClick={() => { openDiscovery(); playNavClick() }}
+                aria-expanded={discoveryOpen}
+                aria-haspopup="true"
+              >
+                💡 Discover
+                <span className={`dropdown-caret${discoveryOpen ? ' open' : ''}`}>▼</span>
+              </button>
+              {discoveryOpen && (
+                <div className="dropdown-menu" role="menu">
+                  <div className="dropdown-label">Explore</div>
+                  <Link to="/did-you-know" className={isActive('/did-you-know') ? 'active' : ''}
+                    role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
+                    <span style={{ fontSize:'1.1rem' }}>💡</span>
+                    <div>
+                      <div style={{ fontWeight:'600', marginBottom:'2px' }}>Did You Know?</div>
+                      <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Bible facts &amp; wonders</div>
+                    </div>
+                  </Link>
+                  <div className="dropdown-divider" />
+                  <Link to="/secrets" className={isActive('/secrets') ? 'active' : ''}
+                    role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
+                    <span style={{ fontSize:'1.1rem' }}>🔍</span>
+                    <div>
+                      <div style={{ fontWeight:'600', marginBottom:'2px' }}>Biblical Secrets</div>
+                      <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>60 flip-card discoveries</div>
+                    </div>
+                  </Link>
+                  <div className="dropdown-divider" />
+                  <Link to="/maps" className={isActive('/maps') ? 'active' : ''}
+                    role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
+                    <span style={{ fontSize:'1.1rem' }}>🗺️</span>
+                    <div>
+                      <div style={{ fontWeight:'600', marginBottom:'2px' }}>Bible Maps</div>
+                      <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Interactive maps &amp; timelines</div>
+                    </div>
+                  </Link>
+                  <div className="dropdown-divider" />
+                  <Link to="/name-dictionary" className={isActive('/name-dictionary') ? 'active' : ''}
+                    role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
+                    <span style={{ fontSize:'1.1rem' }}>📖</span>
+                    <div>
+                      <div style={{ fontWeight:'600', marginBottom:'2px' }}>Name Dictionary</div>
+                      <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Meaning &amp; origin of any name</div>
+                    </div>
+                  </Link>
+                  <div className="dropdown-divider" />
+                  <Link to="/dreams" className={isActive('/dreams') ? 'active' : ''}
+                    role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
+                    <span style={{ fontSize:'1.1rem' }}>🌙</span>
+                    <div>
+                      <div style={{ fontWeight:'600', marginBottom:'2px' }}>Dream Interpreter</div>
+                      <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Biblical meanings of dreams</div>
+                    </div>
+                  </Link>
+                </div>
+              )}
+            </li>
 
-          {/* Community */}
-          <li>
-            <Link to="/community" className={isActive('/community') ? 'active' : ''}
-              onClick={() => { closeMenu(); playNavClick() }}>
-              🏛️ {t('community')}
-            </Link>
-          </li>
+            <li aria-hidden="true"><div className="navbar__divider" /></li>
 
-          {/* Settings */}
-          <li>
-            <Link to="/settings" className={isActive('/settings') ? 'active' : ''}
-              onClick={() => { closeMenu(); playNavClick() }}>
-              ⚙️ {t('settings')}
-            </Link>
-          </li>
+            {/* Games */}
+            <li>
+              <Link to="/games" className={isActive('/games') ? 'active' : ''}
+                onClick={() => { closeMenu(); playNavClick() }}>
+                | 🎮 {t('games')}
+              </Link>
+            </li>
 
-          {/* Profile */}
-          <li>
-            <Link to="/profile" className={isActive('/profile') ? 'active' : ''}
-              onClick={() => { closeMenu(); playNavClick() }}>
-              👤 Profile
-            </Link>
-          </li>
+            {/* Community */}
+            <li>
+              <Link to="/community" className={isActive('/community') ? 'active' : ''}
+                onClick={() => { closeMenu(); playNavClick() }}>
+                🏛️ {t('community')}
+              </Link>
+            </li>
 
-          <li aria-hidden="true"><div className="navbar__divider" /></li>
+            {/* Settings */}
+            <li>
+              <Link to="/settings" className={isActive('/settings') ? 'active' : ''}
+                onClick={() => { closeMenu(); playNavClick() }}>
+                | ⚙️ {t('settings')}
+              </Link>
+            </li>
 
-          {/* ── My Journey Dropdown ── */}
-          <li ref={prayerRef} className="dropdown-wrapper">
-            <button
-              className={`dropdown-trigger${isPrayerActive ? ' active' : ''}`}
-              onClick={() => { openPrayer(); playNavClick() }}
-              aria-expanded={prayerOpen}
-              aria-haspopup="true"
-            >
-              🙏 My Journey
-              <span className={`dropdown-caret${prayerOpen ? ' open' : ''}`}>▼</span>
-            </button>
-            {prayerOpen && (
-              <div className="dropdown-menu" role="menu">
-                <div className="dropdown-label">Personal</div>
-                <Link to="/prayer-guide" className={isActive('/prayer-guide') ? 'active' : ''}
-                  role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
-                  <span style={{ fontSize:'1.1rem' }}>🙏</span>
-                  <div>
-                    <div style={{ fontWeight:'600', marginBottom:'2px' }}>Let's Pray</div>
-                    <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Guided prayer with Dr. Silas</div>
-                  </div>
-                </Link>
-                <div className="dropdown-divider" />
-                <Link to="/prayer" className={isActive('/prayer') ? 'active' : ''}
-                  role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
-                  <span style={{ fontSize:'1.1rem' }}>📔</span>
-                  <div>
-                    <div style={{ fontWeight:'600', marginBottom:'2px' }}>Prayer Journal</div>
-                    <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Private prayers &amp; answered ones</div>
-                  </div>
-                </Link>
-                <div className="dropdown-divider" />
-                <Link to="/progress" className={isActive('/progress') ? 'active' : ''}
-                  role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
-                  <span style={{ fontSize:'1.1rem' }}>📊</span>
-                  <div>
-                    <div style={{ fontWeight:'600', marginBottom:'2px' }}>Study Progress</div>
-                    <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Track your Bible reading</div>
-                  </div>
-                </Link>
-              </div>
-            )}
-          </li>
+            {/* Profile */}
+            <li>
+              <Link to="/profile" className={isActive('/profile') ? 'active' : ''}
+                onClick={() => { closeMenu(); playNavClick() }}>
+                👤 Profile
+              </Link>
+            </li>
 
-        </ul>
+            <li aria-hidden="true"><div className="navbar__divider" /></li>
 
-        {/* Right: Dark mode toggle + Hamburger */}
+            {/* ── My Journey Dropdown ── */}
+            <li ref={prayerRef} className="dropdown-wrapper">
+              <button
+                className={`dropdown-trigger${isPrayerActive ? ' active' : ''}`}
+                onClick={() => { openPrayer(); playNavClick() }}
+                aria-expanded={prayerOpen}
+                aria-haspopup="true"
+              >
+                🙏 My Journey
+                <span className={`dropdown-caret${prayerOpen ? ' open' : ''}`}>▼</span>
+              </button>
+              {prayerOpen && (
+                <div className="dropdown-menu" role="menu">
+                  <div className="dropdown-label">Personal</div>
+                  <Link to="/prayer-guide" className={isActive('/prayer-guide') ? 'active' : ''}
+                    role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
+                    <span style={{ fontSize:'1.1rem' }}>🙏</span>
+                    <div>
+                      <div style={{ fontWeight:'600', marginBottom:'2px' }}>Let's Pray</div>
+                      <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Guided prayer with Dr. Silas</div>
+                    </div>
+                  </Link>
+                  <div className="dropdown-divider" />
+                  <Link to="/prayer" className={isActive('/prayer') ? 'active' : ''}
+                    role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
+                    <span style={{ fontSize:'1.1rem' }}>📔</span>
+                    <div>
+                      <div style={{ fontWeight:'600', marginBottom:'2px' }}>Prayer Journal</div>
+                      <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Private prayers &amp; answered ones</div>
+                    </div>
+                  </Link>
+                  <div className="dropdown-divider" />
+                  <Link to="/progress" className={isActive('/progress') ? 'active' : ''}
+                    role="menuitem" onClick={() => { closeMenu(); playNavClick() }}>
+                    <span style={{ fontSize:'1.1rem' }}>📊</span>
+                    <div>
+                      <div style={{ fontWeight:'600', marginBottom:'2px' }}>Study Progress</div>
+                      <div style={{ fontSize:'0.72rem', color:'#a89bc2', fontWeight:'400' }}>Track your Bible reading</div>
+                    </div>
+                  </Link>
+                </div>
+              )}
+            </li>
+
+          </ul>
+        )}
+
+        {/* Right: Toggle slot (like Dark Mode) + Hamburger button */}
         <div className="navbar__right">
-          {toggleSlot}
-          <button
-            className="navbar__hamburger"
-            onClick={() => { toggleMenu(); playNavClick() }}
-            aria-expanded={menuOpen}
-            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-          >
-            <span className={menuOpen ? 'open' : ''} />
-            <span className={menuOpen ? 'open' : ''} />
-            <span className={menuOpen ? 'open' : ''} />
-          </button>
+          {!isPublicView && toggleSlot}
+          {!isPublicView && (
+            <button
+              className="navbar__hamburger"
+              onClick={() => { toggleMenu(); playNavClick() }}
+              aria-expanded={menuOpen}
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            >
+              <span className={menuOpen ? 'open' : ''} />
+              <span className={menuOpen ? 'open' : ''} />
+              <span className={menuOpen ? 'open' : ''} />
+            </button>
+          )}
         </div>
 
       </nav>
 
       {/* ════════ MOBILE DROPDOWN MENU ════════ */}
-      {menuOpen && (
+      {menuOpen && !isPublicView && (
         <div className="navbar__mobile-menu" role="dialog" aria-label="Mobile navigation">
 
           {/* Main pages */}
@@ -675,7 +686,6 @@ export default function Navbar({ toggleSlot }) {
             onClick={() => { closeMenu(); playNavClick() }}>
             📖 Name Dictionary
           </Link>
-          {/* Mobile Menu Item added for Dream Interpreter */}
           <Link to="/dreams"
             className={`mobile-sub-item${isActive('/dreams') ? ' active' : ''}`}
             onClick={() => { closeMenu(); playNavClick() }}>
@@ -684,7 +694,7 @@ export default function Navbar({ toggleSlot }) {
 
           <div className="navbar__mobile-divider" />
 
-          {/* Extra pages */}
+          {/* Extra routes */}
           <ul role="list">
             <li>
               <Link to="/games" className={isActive('/games') ? 'active' : ''}

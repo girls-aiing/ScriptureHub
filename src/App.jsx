@@ -29,7 +29,9 @@ import DeepSearchPage       from './pages/DeepSearchPage.jsx'
 import NameDictionaryPage   from './pages/NameDictionaryPage.jsx'
 import DreamInterpreterPage from './pages/DreamInterpreterPage.jsx'
 import AuthPage             from './pages/AuthPage.jsx'
-import ProfilePage          from './pages/ProfilePage.jsx' // Make sure to create this file next!
+import ProfilePage          from './pages/ProfilePage.jsx'
+import AboutPage            from './pages/AboutPage.jsx'
+import LandingPage          from './pages/LandingPage.jsx'
 import { supabase }         from './utils/supabaseClient.js'
 
 // Pages where the floating chat should be hidden
@@ -45,9 +47,51 @@ function ConditionalChat() {
   return HIDDEN_CHAT_PATHS.includes(pathname) ? null : <FloatingChat />
 }
 
+function GuestShell() {
+  const location = useLocation()
+  const [showAuth, setShowAuth] = React.useState(() => Boolean(location.state?.showAuth))
+
+  React.useEffect(() => {
+    if (location.state?.showAuth) {
+      setShowAuth(true)
+    }
+  }, [location.state?.showAuth])
+
+  React.useEffect(() => {
+    if (location.pathname === '/about') {
+      setShowAuth(false)
+    }
+  }, [location.pathname])
+
+  const showFooter = location.pathname === '/' || location.pathname === '/about'
+
+  return (
+    <div className="app-shell">
+      {location.pathname === '/about' && (
+        <Navbar toggleSlot={null} isPublicView={true} />
+      )}
+      <main className="app-main">
+        <Routes>
+          <Route
+            path="/"
+            element={
+              showAuth
+                ? <AuthPage />
+                : <LandingPage onNavigateToLogin={() => setShowAuth(true)} />
+            }
+          />
+          <Route path="/about" element={<AboutPage isPublicView />} />
+        </Routes>
+      </main>
+      {showFooter && <Footer />}
+    </div>
+  )
+}
+
 function AppShell() {
   const [session, setSession] = React.useState(null)
   const [loading, setLoading] = React.useState(true)
+  const location = useLocation() // Safely extract pathname using React Router
 
   React.useEffect(() => {
     // Check initial authentication session state on mount
@@ -73,16 +117,15 @@ function AppShell() {
     )
   }
 
-  // Gatekeeper checkpoint: If user session doesn't exist, display the authorization forms
   if (!session) {
-    return <AuthPage />
+    return <GuestShell />
   }
 
   return (
     <div className="app-shell">
       <Navbar toggleSlot={<DarkModeToggle />} />
       <main className="app-main">
-        <Routes>
+      <Routes>
           <Route path="/profile"         element={<ProfilePage />} />
           <Route path="/"                element={<HomePage />} />
           <Route path="/bible"           element={<BibleReaderPage />} />
@@ -101,16 +144,16 @@ function AppShell() {
           <Route path="/search"          element={<DeepSearchPage />} />
           <Route path="/name-dictionary" element={<NameDictionaryPage />} />
           <Route path="/dreams"          element={<DreamInterpreterPage />} />
+          <Route path="/about"           element={<AboutPage />} /> 
           <Route path="*"                element={<NotFoundPage />} />
         </Routes>
       </main>
-      <ConditionalFooter />
+      { (location.pathname === '/' || location.pathname === '/about') && <Footer /> }
       <ConditionalChat />
       <VoiceGuide />
     </div>
   )
 }
-
 export default function App() {
   return (
     <LanguageProvider>

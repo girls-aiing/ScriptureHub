@@ -1,7 +1,5 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import Navbar from '../components/Navbar.jsx'
-import Footer from '../components/Footer.jsx'
 
 /* ═══════════════════════════════════════════════════════════════
    AboutPage — The Clergy & Council + The Impact Report
@@ -88,11 +86,9 @@ const dashboardFeatures = [
   },
 ]
 
-export default function AboutPage() {
+export default function AboutPage({ isPublicView = false }) {
   return (
     <div className="about-page">
-      <Navbar />
-
       <main>
         {/* ── HERO BANNER ─────────────────────────────────── */}
         <section className="about-hero">
@@ -191,9 +187,6 @@ export default function AboutPage() {
             </div>
 
             {/* ── Chart placeholder ── */}
-            {/* NOTE FOR STUDENT: In a future session we can swap this
-                placeholder for a real Recharts bar or line chart.
-                The data is already shaped and ready to connect. */}
             <div className="chart-placeholder">
               <div className="chart-placeholder__inner">
                 <span className="chart-placeholder__icon">📊</span>
@@ -238,10 +231,14 @@ export default function AboutPage() {
                 ))}
               </div>
 
-              {/* CTA — directs user toward the Growth Dashboard page */}
+              {/* CTA — updated to safely use the configured /progress endpoint */}
               <div className="dashboard-preview__cta">
-                <Link to="/growth" className="btn btn--primary">
-                  Open My Growth Dashboard
+                <Link
+                  to={isPublicView ? '/' : '/progress'}
+                  state={isPublicView ? { showAuth: true } : undefined}
+                  className="btn btn--primary"
+                >
+                  {isPublicView ? 'Sign In to Open Your Dashboard' : 'Open My Growth Dashboard'}
                 </Link>
               </div>
             </div>
@@ -250,12 +247,7 @@ export default function AboutPage() {
         </section>
       </main>
 
-      <Footer />
-
-      {/* ── Page-scoped styles ───────────────────────────────────
-          These styles live here so every class name is clearly
-          connected to this one page. Easy to find, easy to edit.
-      ─────────────────────────────────────────────────────────── */}
+      {/* ── Page-scoped styles ─────────────────────────────────── */}
       <style>{`
         /* ── Page wrapper ── */
         .about-page {
@@ -287,6 +279,7 @@ export default function AboutPage() {
           font-weight: 700;
           color: var(--color-accent, #f5c842);
           margin-bottom: 1rem;
+          line-height: 1.3;
         }
         .section-header__body {
           font-size: 1.05rem;
